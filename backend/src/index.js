@@ -6,6 +6,8 @@ import userRouter from './routes/user.routes.js';
 import adminRouter from './routes/admin.routes.js';
 import authRouter from './routes/auth.routes.js';
 import hotelRouter from './routes/hotel.routes.js';
+import roomRouter from './routes/room.routes.js';
+import bookingRouter from './routes/booking.routes.js';
 
 dotenv.config({
     path: './.env'
@@ -24,6 +26,8 @@ app.use('/api/user',userRouter)
 app.use('/api/admin',adminRouter)
 app.use('/api/auth',authRouter)
 app.use('/api/hotel',hotelRouter)
+app.use('/api/room',roomRouter)
+app.use('/api/booking',bookingRouter)
 
 
 app.get('/', (req, res) => {

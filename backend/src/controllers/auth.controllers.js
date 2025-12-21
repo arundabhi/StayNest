@@ -229,3 +229,82 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+export const ownerLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1️⃣ Validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    // 2️⃣ Find owner
+    const owner = await User.findOne({ email });
+
+    if (!owner) {
+      return res.status(404).json({
+        success: false,
+        message: "Owner not found",
+      });
+    }
+
+    // 3️⃣ Check role
+    if (owner.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Not an owner account",
+      });
+    }
+
+    // 4️⃣ Password check
+    const isPasswordMatch = await bcrypt.compare(password, owner.password);
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    // 5️⃣ Generate tokens
+    const { accessToken, refreshToken } =
+      await generateAccessAndRefreshToken(owner._id);
+
+    // 6️⃣ Cookie options
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
+
+    // 7️⃣ Response
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", refreshToken, cookieOptions)
+      .json({
+        success: true,
+        message: "Owner login successful",
+        accessToken,
+        owner: {
+          id: owner._id,
+          name: owner.name,
+          email: owner.email,
+          role: owner.role
+        },
+      });
+
+  } catch (error) {
+    console.error("OWNER LOGIN ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};

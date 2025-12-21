@@ -6,6 +6,7 @@ const hotelSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      unique:true
     },
 
     name: {
@@ -83,6 +84,8 @@ const hotelSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    approvedBy:{type:String},
+    approvedAt:{type:Date}
   },
   { timestamps: true }
 );

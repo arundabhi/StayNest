@@ -2,6 +2,7 @@
 import { User } from '../models/user.models.js';
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { Hotel } from '../models/hotel.models.js';
 
 
 export const adminLogin = async (req, res) => {
@@ -90,3 +91,68 @@ export const getAllOwners = async (req,res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 }
+
+export const approveHotel = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    const hotel = await Hotel.findById(hotelId);
+
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: "Hotel not found",
+      });
+    }
+
+    if (hotel.isApproved) {
+      return res.status(400).json({
+        success: false,
+        message: "Hotel already approved",
+      });
+    }
+
+    // 1️⃣ Approve hotel
+    hotel.isApproved = true;
+    hotel.approvedBy = req.userId; // admin id
+    hotel.approvedAt = new Date();
+    await hotel.save();
+
+    // 2️⃣ CHANGE USER ROLE → OWNER
+    await User.findByIdAndUpdate(
+      hotel.owner,
+      { role: "owner" },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Hotel approved and user promoted to owner",
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getAllHotelsAdmin = async (req, res) => {
+  try {
+    const hotels = await Hotel.find()
+      .populate("owner", "name email role")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: hotels.length,
+      hotels,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
