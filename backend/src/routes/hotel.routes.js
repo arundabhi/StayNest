@@ -15,7 +15,7 @@ import {
 } from "../controllers/hotel.controllers.js";
 
 import { protect } from "../middelwares/auth.js";
-import { isOwner } from "../middelwares/role.js";
+import { authorizeRoles } from "../middelwares/role.js";
 import upload from "../middelwares/multer.js";
 
 const hotelRouter = express.Router();
@@ -40,7 +40,7 @@ hotelRouter.post(
 hotelRouter.get(
   "/my/hotels",
   protect,
-  isOwner,
+  authorizeRoles("owner", "admin"),
   getMyHotel
 );
 
@@ -48,7 +48,7 @@ hotelRouter.get(
 hotelRouter.patch(
   "/:hotelId",
   protect,
-  isOwner,
+  authorizeRoles("owner", "admin"),
   upload.array("images", 5),
   updateHotel
 );
@@ -57,7 +57,7 @@ hotelRouter.patch(
 hotelRouter.patch(
   "/toggle/status",
   protect,
-  isOwner,
+  authorizeRoles("owner", "admin"),
   toggleHotelState
 );
 
@@ -65,7 +65,7 @@ hotelRouter.patch(
 hotelRouter.patch(
   "/images/add",
   protect,
-  isOwner,
+  authorizeRoles("owner", "admin"),
   upload.array("images", 5),
   addHotelImages
 );
@@ -74,7 +74,7 @@ hotelRouter.patch(
 hotelRouter.delete(
   "/images/remove",
   protect,
-  isOwner,
+  authorizeRoles("owner", "admin"),
   removeHotelImage
 );
 
@@ -82,7 +82,7 @@ hotelRouter.delete(
 hotelRouter.delete(
   "/:hotelId",
   protect,
-  isOwner,
+  authorizeRoles("owner", "admin"),
   deleteHotel
 );
 
@@ -90,7 +90,7 @@ hotelRouter.delete(
 hotelRouter.get(
   "/stats/dashboard",
   protect,
-  isOwner,
+  authorizeRoles("owner", "admin"),
   getHotelStats
 );
 

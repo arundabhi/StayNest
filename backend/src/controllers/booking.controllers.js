@@ -2,15 +2,18 @@ import { Booking } from "../models/booking.models.js";
 import { Hotel } from "../models/hotel.models.js";
 import { Room } from "../models/room.models.js";
 import { calculateDynamicPrice } from "../utils/calculateDynamicPrice.utils.js";
+import mongoose from "mongoose";
+import { autoPromoteWaitlist } from "./waitlist.controllers.js";
+
 
 export const createBooking = async (req, res) => {
-  try {
     const { checkIn, checkOut, totalGuest, paymentMode } = req.body;
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
 
     //auth
     if (!userId) {
+
       return res.status(401).json({
         success: false,
         message: "Please login to book a room",
@@ -19,6 +22,7 @@ export const createBooking = async (req, res) => {
 
     //required fields
     if (!hotelId || !roomId) {
+
       return res.status(400).json({
         success: false,
         message: "Hotel and Room are required",
@@ -26,6 +30,7 @@ export const createBooking = async (req, res) => {
     }
 
     if (!checkIn || !checkOut) {
+
       return res.status(400).json({
         success: false,
         message: "Check-in and check-out dates are required",
@@ -36,6 +41,7 @@ export const createBooking = async (req, res) => {
     const end = new Date(checkOut);
 
     if (end <= start) {
+
       return res.status(400).json({
         success: false,
         message: "Check-out must be after check-in",
@@ -45,6 +51,7 @@ export const createBooking = async (req, res) => {
     const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
     if (diffDays <= 0) {
+
       return res.status(400).json({
         success: false,
         message: "Invalid booking duration",
@@ -52,29 +59,38 @@ export const createBooking = async (req, res) => {
     }
 
     if (!totalGuest || !paymentMode) {
+
       return res.status(400).json({
         success: false,
         message: "Total guests and payment mode required",
       });
     }
-
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
     // roomcheck
-    const room = await Room.findById(roomId);
+    const room = await Room.findById(roomId).session(session);
     if (!room) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({
         success: false,
         message: "Room not found",
       });
     }
     if (room.hotelId.toString() !== hotelId) {
-  return res.status(400).json({
-    success: false,
-    message: "Room does not belong to this hotel"
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+      success: false,
+      message: "Room does not belong to this hotel"
   });
 }
 
 
     if (room.maxGuests < totalGuest) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({
         success: false,
         message: "Guest count exceeds room capacity",
@@ -82,6 +98,8 @@ export const createBooking = async (req, res) => {
     }
 
     if (!room.isAvailable) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({
         success: false,
         message: "Room temporarily unavailable",
@@ -94,9 +112,11 @@ export const createBooking = async (req, res) => {
       status: 'booked',
       checkIn: { $lt: end },
       checkOut: { $gt: start },
-    });
+    },{session});
 
     if (overlappingBookings >= room.totalRooms) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({
         success: false,
         message: "Room not available for selected dates",
@@ -117,25 +137,30 @@ export const createBooking = async (req, res) => {
     const totalPrice = dynamicPricePerDay * diffDays;
 
     //creatbook
-    const booking = await Booking.create({
+    const booking = await Booking.create([{
       userId,
       hotelId,
       roomId,
-      checkIn,
-      checkOut,
+      checkIn:start,
+      checkOut:end,
       totalGuest,
       paymentMode,
       totalPrice,
       status: "pending",
       paymentStatus: "pending",
-    });
+    }],{session});
+
+    await session.commitTransaction();
+    session.endSession();
 
     return res.status(201).json({
       success: true,
       message: "Booking created successfully",
-      booking,
+      booking:booking[0],
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Create booking error:", error);
     return res.status(500).json({
       success: false,
@@ -145,6 +170,7 @@ export const createBooking = async (req, res) => {
 };
 
 export const confirmBooking = async (req, res) => {
+  
   try {
     const { bookingId } = req.params;
     const userId = req.userId;
@@ -157,8 +183,13 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
+    if(!bookingId){
+      return res.status(400).json({success:false,message:"Booking id must be provide"})
+    }
+
     // findBookking
     const booking = await Booking.findById(bookingId);
+    
 
     if (!booking) {
       return res.status(404).json({
@@ -168,17 +199,18 @@ export const confirmBooking = async (req, res) => {
     }
 
     // ownership
-    if (booking.userId.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "Not allowed to confirm this booking",
-      });
-    }
+    if (booking.userId.toString() !== userId.toString()) {
+  return res.status(403).json({
+    success: false,
+    message: "Not allowed to confirm this booking",
+  });
+}
+
     const now = new Date();
-now.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
 
     if (booking.checkOut < new Date()) {
-  return res.status(400).json({
+      return res.status(400).json({
     success: false,
     message: "Booking already expired"
   });
@@ -192,19 +224,28 @@ now.setHours(0, 0, 0, 0);
       });
     }
 
-    // paymentcheck
-    if (booking.paymentStatus !== "confirm") {
-      return res.status(400).json({
+   
+    console.log("RAW booking.roomId:", booking.roomId);
+console.log("TYPE:", typeof booking.roomId);
+console.log("IS ObjectId:", mongoose.Types.ObjectId.isValid(
+  booking.roomId?._id ?? booking.roomId
+));
+
+
+   const roomId = booking.roomId?._id ?? booking.roomId;
+console.log("FINAL roomId used:", roomId);
+
+    // find room
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return res.status(404).json({
         success: false,
-        message: "Payment not completed",
+        message: "Rooms not found",
       });
     }
 
-    // availability
-    const room = await Room.findById(booking.roomId);
-
     const overlappingBookings = await Booking.countDocuments({
-      roomId: booking.roomId,
+      roomId: roomId,
       status: "booked",
       checkIn: { $lt: booking.checkOut },
       checkOut: { $gt: booking.checkIn },
@@ -309,6 +350,7 @@ export const cancelBooking = async (req, res) => {
     booking.status = "canceled";
     booking.paymentStatus = "canceled";
     await booking.save();
+    await autoPromoteWaitlist();
 
     return res.status(200).json({
       success: true,
@@ -441,7 +483,7 @@ export const getAllBookingsForHotel = async (req, res) => {
 
     const hotel = await Hotel.findOne({
       _id: hotelId,
-      ownerId: user._id
+      owner: user._id
     });
 
     if (!hotel) {
@@ -505,7 +547,7 @@ export const checkRoomAvailability = async (req, res) => {
     const bookedCount = await Booking.countDocuments({
       hotelId,
       roomId,
-      status: "confirm",
+      status: "booked",
       $or: [
         {
           checkIn: { $lt: checkOut },
@@ -593,3 +635,292 @@ export const updatePaymentStatus = async (req, res) => {
   }
 };
 
+export const getPastBooking = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const pastBookings = await Booking.find({
+      userId,
+      status: { $in: ["completed", "canceled"] }
+    })
+    .sort({ createdAt: -1 })
+    .populate("hotelId", "name city")
+    .populate("roomId", "roomType pricePerDay")
+;
+
+    return res.status(200).json({
+      success: true,
+      message: "Past bookings fetched successfully",
+      pastBookings
+    });
+
+  } catch (error) {
+    console.error("get user past booking error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+export const autoCancelledPendingBooking = async () => {
+  try {
+    const TIME_LIMIT = 15 * 60 * 1000; //15 minit 
+    const expiryTime = new Date(Date.now() - TIME_LIMIT);
+
+    const result = await Booking.updateMany(
+      {
+        paymentStatus: "pending",
+        status: "pending",
+        createdAt: { $lt: expiryTime }
+      },
+      {
+        $set: {
+          status: "canceled",
+          paymentStatus: "canceled"
+        }
+      }
+    );
+
+    console.log(`Auto-cancelled ${result.modifiedCount} pending bookings`);
+  } catch (error) {
+    console.error("Auto cancel pending booking error:", error);
+  }
+};
+
+export const getUpcomingBooking = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const upcomingBookings = await Booking.find({
+      userId,
+      checkIn: { $gte: today },
+      status: { $ne: "canceled" },
+      paymentStatus: "confirm"
+    })
+    .sort({ checkIn: 1 });
+
+    if (upcomingBookings.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No upcoming bookings",
+        upcomingBookings: []
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Upcoming bookings fetched successfully",
+      upcomingBookings
+    });
+
+  } catch (error) {
+    console.error("get upcoming booking error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+
+export const getBookingStats = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const totalBookings = await Booking.countDocuments({ userId });
+
+    const upcomingBookings = await Booking.countDocuments({
+      userId,
+      checkIn: { $gte: today },
+      status: { $ne: "canceled" },
+      paymentStatus: "confirm"
+    });
+
+    const pastBookings = await Booking.countDocuments({
+      userId,
+      checkOut: { $lt: today }
+    });
+
+    const canceledBookings = await Booking.countDocuments({
+      userId,
+      status: "canceled"
+    });
+
+    const pendingPayments = await Booking.countDocuments({
+      userId,
+      paymentStatus: "pending"
+    });
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        totalBookings,
+        upcomingBookings,
+        pastBookings,
+        canceledBookings,
+        pendingPayments
+      }
+    });
+
+  } catch (error) {
+    console.error("get booking stats error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+export const getHotelRevenue = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    if (!hotelId) {
+      return res.status(400).json({
+        success: false,
+        message: "Hotel ID is required"
+      });
+    }
+
+    const revenue = await Booking.aggregate([
+      {
+        $match: {
+          hotelId: new mongoose.Types.ObjectId(hotelId),
+          paymentStatus: "confirm",
+          status: { $ne: "canceled" }
+        }
+      },
+      {
+        $group: {
+          _id: "$hotelId",
+          totalRevenue: { $sum: "$totalPrice" },
+          totalBookings: { $sum: 1 }
+        }
+      }
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      revenue: revenue[0] || {
+        totalRevenue: 0,
+        totalBookings: 0
+      }
+    });
+
+  } catch (error) {
+    console.error("get hotel revenue error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+
+export const getMonthlyHotelRevenue = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    const revenue = await Booking.aggregate([
+      {
+        $match: {
+          hotelId: new mongoose.Types.ObjectId(hotelId),
+          paymentStatus: "confirm"
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
+          },
+          totalRevenue: { $sum: "$totalPrice" }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+
+    return res.status(200).json({ success: true, revenue });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+export const autoCompleteBooking = async () => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = await Booking.updateMany(
+      {
+        status: "booked",
+        checkOut: { $lt: today }
+      },
+      {
+        $set: { status: "completed" }
+      }
+    );
+    if (result.modifiedCount > 0) {
+    await autoPromoteWaitlist();
+  }
+
+    console.log(`Auto-completed ${result.modifiedCount} bookings`);
+  } catch (error) {
+    console.error("Auto complete booking error:", error);
+  }
+};
+
+
+export const verifyPayment = async (req, res) => {
+  const { bookingId } = req.params;
+
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    return res.status(404).json({ success: false, message: "Booking not found" });
+  }
+
+  booking.paymentStatus = "confirm";
+  await booking.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Payment verified",
+  });
+};
+
+
+export const autoConfirmPendingBooking = async (req,res) => {
+  try {
+    
+  } catch (error) {
+    
+  }
+}

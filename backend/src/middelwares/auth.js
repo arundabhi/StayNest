@@ -10,7 +10,9 @@ export const protect = async (req,res,next) => {
     if(!user){
         return res.status(400).json({success:false,message:"Invalide Token"})
     }
+    
     req.userId = user._id
+    console.log(req.userId);
     req.user = user;
     next()
     } catch (error) {

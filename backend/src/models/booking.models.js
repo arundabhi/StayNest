@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;
-
+console.log("In hotel");
 const bookingSchema = new Schema(
   {
     userId: {
@@ -52,7 +52,7 @@ const bookingSchema = new Schema(
 
     status: {
       type: String,
-      enum: ["pending", "booked", "waitlist", "canceled"],
+      enum: ["pending", "booked", "completed", "canceled",'waitlist'],
       default: "pending",
     },
 
@@ -65,11 +65,13 @@ const bookingSchema = new Schema(
   { timestamps: true }
 );
 
-bookingSchema.pre("save", function (next) {
+bookingSchema.pre("save", async function () {
+  console.log("Pre save");
+
   if (this.checkOut <= this.checkIn) {
-    return next(new Error("Check-out date must be after check-in date"));
+    throw new Error("Check-out date must be after check-in date");
   }
-  next();
 });
+
 
 export const Booking = mongoose.model("Booking", bookingSchema);

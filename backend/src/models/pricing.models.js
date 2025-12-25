@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
+
+
 const pricingSchema = new Schema({
   name: {
     type: String, // Diwali, New Year

@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
+
+
 const roomSchema = new Schema(
   {
     hotelId: {
@@ -62,7 +64,6 @@ const roomSchema = new Schema(
   { timestamps: true }
 );
 
-roomSchema.index({ hotelId: 1 });
 roomSchema.index({ pricePerDay: 1 });
 roomSchema.index({ maxGuests: 1 });
 
