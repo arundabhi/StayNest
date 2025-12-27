@@ -52,5 +52,5 @@ const waitlistSchema = new Schema(
   },
   { timestamps: true }
 );
-
+waitlistSchema.index({ roomId: 1, status: 1, createdAt: 1 }); // ✅ Promotion order
 export const Waitlist = mongoose.model("Waitlist", waitlistSchema);

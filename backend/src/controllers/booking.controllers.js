@@ -7,7 +7,7 @@ import { autoPromoteWaitlist } from "./waitlist.controllers.js";
 
 
 export const createBooking = async (req, res) => {
-    const { checkIn, checkOut, totalGuest, paymentMode } = req.body;
+    const { checkIn, checkOut, totalGuest, paymentMode} = req.body;
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
 
@@ -36,9 +36,18 @@ export const createBooking = async (req, res) => {
         message: "Check-in and check-out dates are required",
       });
     }
-
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const start = new Date(checkIn);
     const end = new Date(checkOut);
+
+    if (start < today) {
+  return res.status(400).json({
+    success: false,
+    message: "Check-in date cannot be in the past",
+  });
+}
+
 
     if (end <= start) {
 
@@ -224,17 +233,9 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
-   
-    console.log("RAW booking.roomId:", booking.roomId);
-console.log("TYPE:", typeof booking.roomId);
-console.log("IS ObjectId:", mongoose.Types.ObjectId.isValid(
-  booking.roomId?._id ?? booking.roomId
-));
 
 
    const roomId = booking.roomId?._id ?? booking.roomId;
-console.log("FINAL roomId used:", roomId);
-
     // find room
     const room = await Room.findById(roomId);
     if (!room) {

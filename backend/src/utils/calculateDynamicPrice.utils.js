@@ -10,10 +10,14 @@ export const calculateDynamicPrice = async ({
   let multiplier = 1;
 
   const pricingRule = await Pricing.findOne({
-    hotelId,
-    startDate: { $lte: checkIn },
-    endDate: { $gte: checkOut }
-  });
+  hotelId,
+  $or: [
+    // Booking overlaps with pricing period
+    { startDate: { $lte: checkIn }, endDate: { $gte: checkIn } },
+    { startDate: { $lte: checkOut }, endDate: { $gte: checkOut } },
+    { startDate: { $gte: checkIn }, endDate: { $lte: checkOut } }
+  ]
+}).sort({ multiplier: -1 }); // Get highest multiplier if multiple
 
   if (pricingRule) {
     multiplier *= pricingRule.multiplier;

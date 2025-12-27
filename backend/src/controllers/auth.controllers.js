@@ -4,7 +4,8 @@ import validator from 'validator'
 import generateAccessAndRefreshToken from '../utils/token.utils.js'
 import crypto from "crypto";
 import uploadCloudinary from '../utils/cloudinary.utils.js';
-
+import jwt from 'jsonwebtoken'
+import { sendEmail,emailTemplates } from '../utils/sendEmail.utils.js';
 
 
 export const registerUser = async (req, res) => {
@@ -45,7 +46,7 @@ export const registerUser = async (req, res) => {
     });
 
     const { accessToken, refreshToken } =
-      await generateAccessAndRefreshToken(user._id);
+      await generateAccessAndRefreshToken(user);
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -92,6 +93,7 @@ export const loginUser = async (req, res) => {
       refreshToken,
     });
   } catch (error) {
+    console.log("Login error",error)
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -117,7 +119,7 @@ export const refreshAccessToken = async (req, res) => {
 
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    const user = await User.findById(decoded._id);
+    const user = await User.findById(decoded.id);
     if (!user || user.refreshToken !== refreshToken) {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
@@ -173,6 +175,11 @@ export const forgotPassword = async (req, res) => {
 
     // TODO: send email (nodemailer)
     console.log("Reset URL:", resetUrl);
+    await sendEmail({
+  to: email,
+  subject: 'Reset Password',
+  html: emailTemplates.resetPassword(resetUrl)
+});
 
     return res.status(200).json({
       success: true,
@@ -273,7 +280,7 @@ export const ownerLogin = async (req, res) => {
 
     // 5️⃣ Generate tokens
     const { accessToken, refreshToken } =
-      await generateAccessAndRefreshToken(owner._id);
+      await generateAccessAndRefreshToken(owner);
 
     // 6️⃣ Cookie options
     const cookieOptions = {

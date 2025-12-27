@@ -51,7 +51,7 @@ const hotelSchema = new Schema(
       },
     ],
 
-    rating: {
+    avgRating: {
       type: Number,
       default: 0,
       min: 0,

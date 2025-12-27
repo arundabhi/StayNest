@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;
-console.log("In hotel");
+
 const bookingSchema = new Schema(
   {
     userId: {
@@ -52,18 +52,24 @@ const bookingSchema = new Schema(
 
     status: {
       type: String,
-      enum: ["pending", "booked", "completed", "canceled",'waitlist'],
+      enum: ["pending", "booked", "completed", "canceled"],
       default: "pending",
     },
 
     paymentStatus: {
       type: String,
-      enum: ["pending", "confirm", "canceled"],
+      enum:  ["pending", "processing", "success", "failed", "canceled"],
       default: "pending",
     },
+    couponApplied: { type: Boolean, default: false },
+    couponCode: String
+
   },
   { timestamps: true }
 );
+bookingSchema.index({ roomId: 1, checkIn: 1, checkOut: 1 }); // ✅ Availability queries
+bookingSchema.index({ userId: 1, status: 1 }); // ✅ User bookings
+bookingSchema.index({ hotelId: 1, createdAt: -1 }); // ✅ Hotel bookings
 
 bookingSchema.pre("save", async function () {
   console.log("Pre save");

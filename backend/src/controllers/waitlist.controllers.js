@@ -6,7 +6,7 @@ import { Waitlist } from "../models/waitlist.model.js";
 export const addToWaitlist = async (req, res) => {
   try {
     const userId = req.userId;
-
+    
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -153,7 +153,7 @@ export const getRoomWaitlist = async (req, res) => {
       });
     }
 
-    if (hotel.ownerId.toString() !== userId.toString()) {
+    if (hotel.owner.toString() !== userId.toString()) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to view this waitlist",
@@ -247,19 +247,23 @@ export const promoteWaitlistBooking = async (req, res) => {
         message: "User already has an active booking",
       });
     }
+const diffDays = Math.ceil((waitlist.checkOut - waitlist.checkIn) / (1000 * 60 * 60 * 24));
+const totalPrice = room.pricePerDay * diffDays;
+
+const booking = await Booking.create({
+  userId: waitlist.userId,
+  hotelId: waitlist.hotelId,
+  roomId,
+  checkIn: waitlist.checkIn,
+  checkOut: waitlist.checkOut,
+  totalGuest: waitlist.totalGuest,
+  totalPrice, // ✅
+  status: "pending",
+  paymentStatus: "pending",
+  paymentMode: "cod",
+});
 
 
-    const booking = await Booking.create({
-      userId: waitlist.userId,
-      hotelId: waitlist.hotelId,
-      roomId,
-      checkIn: waitlist.checkIn,
-      checkOut: waitlist.checkOut,
-      totalGuest: waitlist.totalGuest,
-      status: "pending",
-      paymentStatus: "pending",
-      paymentMode: "cod",
-    });
 
 
     waitlist.status = "promoted";

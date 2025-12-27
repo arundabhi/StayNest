@@ -2,6 +2,7 @@ import { Booking } from "../models/booking.models.js";
 import { Hotel } from "../models/hotel.models.js";
 import { Room } from "../models/room.models.js";
 import uploadCloudinary from "../utils/cloudinary.utils.js";
+import mongoose from 'mongoose'
 
 export const createRoom = async (req, res) => {
   try {

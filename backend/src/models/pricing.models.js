@@ -27,7 +27,13 @@ const pricingSchema = new Schema({
   hotelId: {
     type: Schema.Types.ObjectId,
     ref: "Hotel"
-  }
+  },
+  multiplier: {
+  type: Number,
+  required: true,
+  min: 0.1, // ✅ Add min
+  max: 10   // ✅ Add max (prevent crazy multipliers)
+}
 }, { timestamps: true });
 
 export const Pricing = mongoose.model("Pricing", pricingSchema);
