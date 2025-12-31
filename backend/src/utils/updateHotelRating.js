@@ -1,5 +1,6 @@
 import { Hotel } from "../models/hotel.models.js";
 import { Review } from "../models/review.models.js";
+import mongoose from "mongoose";
 
 export const updateHotelRating = async (hotelId) => {
   const stats = await Review.aggregate([

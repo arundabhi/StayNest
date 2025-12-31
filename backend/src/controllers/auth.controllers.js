@@ -6,7 +6,14 @@ import crypto from "crypto";
 import uploadCloudinary from '../utils/cloudinary.utils.js';
 import jwt from 'jsonwebtoken'
 import { sendEmail,emailTemplates } from '../utils/sendEmail.utils.js';
-
+import {
+  validateEmail,
+  validatePassword,
+  validateObjectId,
+  validateDateRange,
+  sanitizeInput,
+  validatePhoneNumber
+} from "../utils/validate.utils.js";
 
 export const registerUser = async (req, res) => {
   try {
@@ -15,11 +22,18 @@ export const registerUser = async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: "Missing fields" });
     }
+    name = sanitizeInput(name);
+    email = validateEmail(email);
+    password = validatePassword(password);
+    mobileNumber = validatePhoneNumber(mobileNumber)
 
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({ success: false, message: "Invalid email" });
+    if (!name || name.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must be at least 2 characters",
+      });
     }
-
+    
     const existingUser = await User.findOne({
       $or: [{ email }, { mobileNumber }],
     });
@@ -166,14 +180,13 @@ export const forgotPassword = async (req, res) => {
       .digest("hex");
 
     user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
 
     await user.save({ validateBeforeSave: false });
 
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-    // TODO: send email (nodemailer)
     console.log("Reset URL:", resetUrl);
     await sendEmail({
   to: email,
@@ -221,10 +234,9 @@ export const resetPassword = async (req, res) => {
 
     user.password = await bcrypt.hash(newPassword, 10);
 
-    // Clear reset fields
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-    user.refreshToken = undefined; // logout all sessions
+    user.refreshToken = undefined; 
 
     await user.save();
 
@@ -241,8 +253,6 @@ export const resetPassword = async (req, res) => {
 export const ownerLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // 1️⃣ Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -250,7 +260,6 @@ export const ownerLogin = async (req, res) => {
       });
     }
 
-    // 2️⃣ Find owner
     const owner = await User.findOne({ email });
 
     if (!owner) {
@@ -260,7 +269,7 @@ export const ownerLogin = async (req, res) => {
       });
     }
 
-    // 3️⃣ Check role
+ 
     if (owner.role !== "owner") {
       return res.status(403).json({
         success: false,
@@ -268,7 +277,7 @@ export const ownerLogin = async (req, res) => {
       });
     }
 
-    // 4️⃣ Password check
+   
     const isPasswordMatch = await bcrypt.compare(password, owner.password);
 
     if (!isPasswordMatch) {
@@ -278,11 +287,11 @@ export const ownerLogin = async (req, res) => {
       });
     }
 
-    // 5️⃣ Generate tokens
+
     const { accessToken, refreshToken } =
       await generateAccessAndRefreshToken(owner);
 
-    // 6️⃣ Cookie options
+ 
     const cookieOptions = {
       httpOnly: true,
       secure: true,
@@ -290,7 +299,6 @@ export const ownerLogin = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     };
 
-    // 7️⃣ Response
     return res
       .status(200)
       .cookie("accessToken", accessToken, cookieOptions)

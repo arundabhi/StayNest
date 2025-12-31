@@ -132,7 +132,7 @@ export const deleteReview = async (req, res) => {
     }
 
     await review.deleteOne();
-    await updateHotelRating(hotelId);
+    await updateHotelRating(review.hotelId);
 
     return res.status(200).json({
       success: true,

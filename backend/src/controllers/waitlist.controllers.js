@@ -6,7 +6,10 @@ import { Waitlist } from "../models/waitlist.model.js";
 export const addToWaitlist = async (req, res) => {
   try {
     const userId = req.userId;
-    
+    const { checkIn, checkOut } = req.body;
+    const { roomId } = req.params;
+
+    // -------- AUTH CHECK ----------
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -14,15 +17,40 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-    const { roomId } = req.params;
-
+    // -------- ROOM ID CHECK ----------
     if (!roomId) {
       return res.status(400).json({
         success: false,
-        message: "Room id is required",
+        message: "Room ID is required",
       });
     }
 
+    // -------- DATE VALIDATION ----------
+    if (!checkIn || !checkOut) {
+      return res.status(400).json({
+        success: false,
+        message: "Check-in and Check-out dates are required",
+      });
+    }
+
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    if (isNaN(checkInDate) || isNaN(checkOutDate)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid dates provided",
+      });
+    }
+
+    if (checkInDate >= checkOutDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Check-in must be before Check-out",
+      });
+    }
+
+    // -------- FIND ROOM ----------
     const room = await Room.findById(roomId);
     if (!room) {
       return res.status(404).json({
@@ -31,13 +59,12 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-
+    // -------- CHECK ACTIVE BOOKINGS ----------
     const activeBookings = await Booking.countDocuments({
       roomId,
       status: { $in: ["pending", "booked"] },
     });
 
- 
     if (activeBookings < room.totalRooms) {
       return res.status(400).json({
         success: false,
@@ -45,24 +72,29 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-  
+    // -------- CHECK IF ALREADY WAITLISTED ----------
     const alreadyWaitlisted = await Waitlist.findOne({
       userId,
       roomId,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
       status: "waiting",
     });
 
     if (alreadyWaitlisted) {
       return res.status(400).json({
         success: false,
-        message: "Already in waitlist",
+        message: "You are already in the waitlist for this room and date",
       });
     }
 
+    // -------- ADD TO WAITLIST ----------
     const waitlistEntry = await Waitlist.create({
       userId,
       hotelId: room.hotelId,
       roomId,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
       status: "waiting",
     });
 
@@ -257,7 +289,7 @@ const booking = await Booking.create({
   checkIn: waitlist.checkIn,
   checkOut: waitlist.checkOut,
   totalGuest: waitlist.totalGuest,
-  totalPrice, // ✅
+  totalPrice, 
   status: "pending",
   paymentStatus: "pending",
   paymentMode: "cod",

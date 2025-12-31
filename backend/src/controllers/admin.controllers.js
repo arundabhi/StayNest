@@ -21,11 +21,11 @@ export const adminLogin = async (req, res) => {
 
     const token = jwt.sign(
       {
-        id: "SYSTEM_ADMIN",   // ✅ important
+        id: "SYSTEM_ADMIN",
         role: "admin",
       },
       process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: ACCESS_TOKEN_EXPIRES }
     );
 
     return res.status(200).json({
@@ -115,13 +115,12 @@ export const approveHotel = async (req, res) => {
       });
     }
 
-    // 1️⃣ Approve hotel
+
     hotel.isApproved = true;
-    hotel.approvedBy = req.userId; // admin id
+    hotel.approvedBy = req.userId;
     hotel.approvedAt = new Date();
     await hotel.save();
 
-    // 2️⃣ CHANGE USER ROLE → OWNER
     await User.findByIdAndUpdate(
       hotel.owner,
       { role: "owner" },
@@ -156,6 +155,28 @@ export const getAllHotelsAdmin = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+export const getRegisteredHotels = async (req, res) => {
+  try {
+    const hotels = await Hotel.find({ isApproved: false });
+
+    return res.status(200).json({
+      success: true,
+      message: hotels.length
+        ? "Registered hotels fetched"
+        : "No registered hotels found",
+      hotels,
+    });
+
+  } catch (error) {
+    console.error("Get registered hotels error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

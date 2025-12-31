@@ -67,9 +67,9 @@ const bookingSchema = new Schema(
   },
   { timestamps: true }
 );
-bookingSchema.index({ roomId: 1, checkIn: 1, checkOut: 1 }); // ✅ Availability queries
-bookingSchema.index({ userId: 1, status: 1 }); // ✅ User bookings
-bookingSchema.index({ hotelId: 1, createdAt: -1 }); // ✅ Hotel bookings
+bookingSchema.index({ roomId: 1, checkIn: 1, checkOut: 1 }); 
+bookingSchema.index({ userId: 1, status: 1 });
+bookingSchema.index({ hotelId: 1, createdAt: -1 });
 
 bookingSchema.pre("save", async function () {
   console.log("Pre save");

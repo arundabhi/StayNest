@@ -406,18 +406,18 @@ export const addHotelImages = async (req, res) => {
 };
 
 
-export const getHotelStats = async (req, res) => {
-  const hotel = await Hotel.findOne({ owner: req.userId });
+// export const getHotelStats = async (req, res) => {
+//   const hotel = await Hotel.findOne({ owner: req.userId });
 
-  res.json({
-    success: true,
-    stats: {
-      totalRooms: hotel.rooms?.length || 0,
-      isActive: hotel.isActive,
-      amenitiesCount: hotel.amenities.length,
-    },
-  });
-};
+//   res.json({
+//     success: true,
+//     stats: {
+//       totalRooms: hotel.rooms?.length || 0,
+//       isActive: hotel.isActive,
+//       amenitiesCount: hotel.amenities.length,
+//     },
+//   });
+// };
 
 
 export const removeHotelImage = async (req, res) => {

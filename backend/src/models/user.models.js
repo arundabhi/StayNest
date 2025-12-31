@@ -52,5 +52,13 @@ const userSchema = new Schema(
 userSchema.methods.matchPassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    { id: this._id },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
+  );
+};
+
 
 export const User = mongoose.model("User", userSchema);

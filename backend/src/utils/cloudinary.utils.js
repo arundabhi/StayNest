@@ -7,25 +7,58 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadCloudinary = (buffer) => {
+const uploadCloudinary = (buffer, options = {}) => {
   return new Promise((resolve, reject) => {
     if (!buffer) {
-      return reject(new Error("No file buffer"));
+      return reject(new Error("No file buffer provided"));
     }
 
+    // ✅ Validate buffer is Buffer type
+    if (!Buffer.isBuffer(buffer)) {
+      return reject(new Error("Invalid buffer type"));
+    }
+
+    const uploadOptions = {
+      folder: options.folder || "hotels",
+      resource_type: options.resourceType || "image",
+      transformation: options.transformation || [
+        { quality: "auto" }, // ✅ Auto optimize
+        { fetch_format: "auto" } // ✅ Auto format (WebP support)
+      ],
+      ...options
+    };
+
     const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: "hotels",
-        resource_type: "image",
-      },
+      uploadOptions,
       (error, result) => {
-        if (error) return reject(error);
-        resolve(result);
+        if (error) {
+          console.error("Cloudinary upload error:", error);
+          return reject(new Error(`Upload failed: ${error.message}`));
+        }
+        
+        resolve({
+          secure_url: result.secure_url,
+          public_id: result.public_id,
+          format: result.format,
+          width: result.width,
+          height: result.height
+        });
       }
     );
 
     streamifier.createReadStream(buffer).pipe(uploadStream);
   });
+};
+
+// ✅ Add delete function
+export const deleteFromCloudinary = async (publicId) => {
+  try {
+    const result = await cloudinary.uploader.destroy(publicId);
+    return result;
+  } catch (error) {
+    console.error("Cloudinary delete error:", error);
+    throw error;
+  }
 };
 
 export default uploadCloudinary;

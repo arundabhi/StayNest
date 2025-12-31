@@ -5,7 +5,7 @@ const generateAccessAndRefreshToken = async (user) => {
 
   const accessToken = jwt.sign(
     {
-      id: userId,          // ✅ standard key
+      id: userId,        
       role: user.role || "user",
     },
     process.env.ACCESS_TOKEN_SECRET,
@@ -14,7 +14,7 @@ const generateAccessAndRefreshToken = async (user) => {
 
   const refreshToken = jwt.sign(
     {
-      id: userId,          // ✅ standard key
+      id: userId,          
     },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
