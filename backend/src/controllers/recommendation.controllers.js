@@ -5,6 +5,7 @@ import { Booking } from "../models/booking.models.js";
 import { Review } from "../models/review.models.js";
 import { Wishlist } from "../models/wishlist.models.js";
 import { User } from "../models/user.models.js";
+import mongoose  from "mongoose";
 
 // 🎯 1. Personalized Recommendations (Based on User History)
 export const getPersonalizedRecommendations = async (req, res) => {
@@ -687,9 +688,13 @@ export const getUsersAlsoViewed = async (req, res) => {
     const { limit = 5 } = req.query;
 
     // Get users who viewed this hotel
-    const usersWhoViewed = await Booking.find({ hotelId })
-      .distinct("userId")
-      .limit(100);
+  const usersWhoViewed = await Booking.aggregate([
+  { $match: { hotelId: new mongoose.Types.ObjectId(hotelId) } },
+
+  { $group: { _id: "$userId" } }, // distinct users
+
+  { $limit: 100 } // allowed here
+]);
 
     // Get other hotels these users viewed
     const otherHotels = await Booking.aggregate([
@@ -732,4 +737,50 @@ export const getUsersAlsoViewed = async (req, res) => {
       message: "Internal server error",
     });
   }
+};
+
+
+export const getHotelOffer = async (req, res) => {
+  const { hotelId } = req.params;
+
+  const hotel = await Hotel.findById(hotelId);
+  if (!hotel) return res.json({ success: false });
+
+  // reuse your existing logic
+  const rooms = await Room.find({ hotelId });
+
+  let totalCapacity = 0;
+  let bookedRooms = 0;
+
+  for (const room of rooms) {
+    totalCapacity += room.totalRooms;
+    const booked = await Booking.countDocuments({
+      roomId: room._id,
+      status: "booked",
+    });
+    bookedRooms += booked;
+  }
+
+  const occupancyRate = totalCapacity > 0 ? bookedRooms / totalCapacity : 0;
+
+  let discountPercent = 0;
+  if (occupancyRate < 0.3) discountPercent = 30;
+  else if (occupancyRate < 0.5) discountPercent = 20;
+  else if (occupancyRate < 0.7) discountPercent = 10;
+
+  if (!discountPercent) {
+    return res.json({ success: true, offer: null });
+  }
+
+  return res.json({
+    success: true,
+    offer: {
+      discountPercent,
+      originalPrice: hotel.basePrice,
+      offerPrice: Math.round(
+        hotel.basePrice * (1 - discountPercent / 100)
+      ),
+      validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  });
 };

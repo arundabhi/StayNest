@@ -154,51 +154,74 @@ export const getUserWishlist = async (req, res) => {
 export const toggleWishlist = async (req, res) => {
   try {
     const userId = req.userId;
-    const { roomId } = req.params;
+    const { roomId, hotelId } = req.body; // ✅ BODY, not params
 
-    if (!userId || !roomId) {
+    if (!userId || (!roomId && !hotelId)) {
       return res.status(400).json({
         success: false,
-        message: "User or Room id missing",
+        message: "UserId and HotelId or RoomId required",
       });
     }
 
-    const room = await Room.findById(roomId);
-    if (!room) {
-      return res.status(404).json({
-        success: false,
-        message: "Room not found",
-      });
+    let finalHotelId = hotelId;
+    let finalRoomId = null;
+
+    // 🛏️ If roomId is provided → derive hotelId
+    if (roomId) {
+      const room = await Room.findById(roomId);
+      if (!room) {
+        return res.status(404).json({
+          success: false,
+          message: "Room not found",
+        });
+      }
+      finalRoomId = room._id;
+      finalHotelId = room.hotelId;
     }
 
-    const existing = await Wishlist.findOne({ userId, roomId });
+    // 🏨 If hotelId only → validate hotel
+    if (!finalHotelId) {
+      const hotel = await Hotel.findById(hotelId);
+      if (!hotel) {
+        return res.status(404).json({
+          success: false,
+          message: "Hotel not found",
+        });
+      }
+    }
+
+    // 🔁 Toggle by user + hotel (NOT room)
+    const existing = await Wishlist.findOne({
+      userId,
+      hotelId: finalHotelId,
+    });
 
     if (existing) {
       await existing.deleteOne();
       return res.status(200).json({
         success: true,
-        message: "Removed from wishlist",
         wished: false,
+        message: "Removed from wishlist",
       });
     }
 
     await Wishlist.create({
       userId,
-      roomId,
-      hotelId: room.hotelId,
+      hotelId: finalHotelId,
+      roomId: finalRoomId,
     });
 
     return res.status(201).json({
       success: true,
-      message: "Added to wishlist",
       wished: true,
+      message: "Added to wishlist",
     });
 
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
-        message: "Already wishlisted",
+        message: "Already in wishlist",
       });
     }
 
@@ -213,22 +236,35 @@ export const toggleWishlist = async (req, res) => {
 export const isWishlisted = async (req, res) => {
   try {
     const userId = req.userId;
-    const { roomId } = req.params;
+    const { hotelId, roomId } = req.params;
 
-    if (!userId || !roomId) {
-      return res.status(400).json({
+    // 🔐 Not logged in → NOT an error for wishlist check
+    if (!userId) {
+      return res.status(401).json({
         success: false,
-        message: "Missing data",
+        wishlisted: false,
       });
     }
 
-    const exists = await Wishlist.exists({ userId, roomId });
+    // ❌ Neither hotelId nor roomId provided
+    if (!hotelId && !roomId) {
+      return res.status(400).json({
+        success: false,
+        message: "HotelId or RoomId required",
+      });
+    }
+
+    const query = { userId };
+
+    if (hotelId) query.hotelId = hotelId;
+    if (roomId) query.roomId = roomId;
+
+    const exists = await Wishlist.exists(query);
 
     return res.status(200).json({
       success: true,
       wishlisted: Boolean(exists),
     });
-
   } catch (error) {
     console.error("Wishlist check error:", error);
     return res.status(500).json({
@@ -237,6 +273,7 @@ export const isWishlisted = async (req, res) => {
     });
   }
 };
+
 export const getWishlistCount = async (req, res) => {
   try {
     const userId = req.userId;

@@ -1,1 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&family=Dancing+Script:wght@400..700&family=Outfit:wght@100..900&family=Prata&display=swap');
+
 @import "tailwindcss";
+
+.prata-regular {
+  font-family: "Prata", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+*{
+    font-family: Outfit;
+}
+.input {
+  @apply w-full border rounded-lg p-3 mb-3 focus:outline-none focus:ring focus:ring-blue-300;
+}

@@ -4,16 +4,29 @@ import { Room } from "../models/room.models.js";
 import { calculateDynamicPrice } from "../utils/calculateDynamicPrice.utils.js";
 import mongoose from "mongoose";
 import { autoPromoteWaitlist } from "./waitlist.controllers.js";
+import { calculateFinalPrice } from "../utils/calculateFinalPrice.js";
+import { Coupon } from "../models/coupone.models.js";
+import { calculateCouponDiscount } from "../utils/coupon.js";
+import { Payment } from "../models/payment.models.js";
 
 export const createBooking = async (req, res) => {
   const session = await mongoose.startSession();
-  
+
   try {
     session.startTransaction();
 
-    const { checkIn, checkOut, totalGuest, paymentMode } = req.body;
+    const {
+      checkIn,
+      checkOut,
+      totalGuest,
+      paymentMode,
+      couponCode: couponCodeFromClient,
+    } = req.body;
+
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
+
+    /* ---------------- AUTH & BASIC VALIDATION ---------------- */
 
     if (!userId) {
       await session.abortTransaction();
@@ -23,7 +36,14 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    if (!hotelId || !roomId || !checkIn || !checkOut || !totalGuest || !paymentMode) {
+    if (
+      !hotelId ||
+      !roomId ||
+      !checkIn ||
+      !checkOut ||
+      !totalGuest ||
+      !paymentMode
+    ) {
       await session.abortTransaction();
       return res.status(400).json({
         success: false,
@@ -31,8 +51,11 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    /* ---------------- DATE VALIDATION ---------------- */
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     const start = new Date(checkIn);
     const end = new Date(checkOut);
 
@@ -52,9 +75,9 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
-    if (diffDays <= 0) {
+    if (nights <= 0) {
       await session.abortTransaction();
       return res.status(400).json({
         success: false,
@@ -62,10 +85,11 @@ export const createBooking = async (req, res) => {
       });
     }
 
-   
+    /* ---------------- ROOM VALIDATION ---------------- */
+
     const room = await Room.findById(roomId)
       .session(session)
-      .select('+totalRooms +maxGuests +pricePerDay +hotelId +isAvailable');
+      .select("+totalRooms +maxGuests +pricePerDay +hotelId +isAvailable");
 
     if (!room) {
       await session.abortTransaction();
@@ -99,10 +123,11 @@ export const createBooking = async (req, res) => {
       });
     }
 
-   
+    /* ---------------- AVAILABILITY CHECK ---------------- */
+
     const overlappingBookings = await Booking.countDocuments({
       roomId,
-      status: { $in: ['booked', 'pending'] }, 
+      status: { $in: ["pending", "booked"] },
       checkIn: { $lt: end },
       checkOut: { $gt: start },
     }).session(session);
@@ -115,10 +140,14 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const occupancyRate = overlappingBookings / room.totalRooms;
+    const occupancyRate =
+      room.totalRooms > 0
+        ? overlappingBookings / room.totalRooms
+        : 0;
 
-    
-    const dynamicPricePerDay = await calculateDynamicPrice({
+    /* ---------------- DYNAMIC PRICING ---------------- */
+
+    const dynamicPricing = await calculateDynamicPrice({
       basePrice: room.pricePerDay,
       checkIn: start,
       checkOut: end,
@@ -126,9 +155,48 @@ export const createBooking = async (req, res) => {
       occupancyRate,
     });
 
-    const totalPrice = dynamicPricePerDay * diffDays;
+    const pricePerDay = dynamicPricing.pricePerDay;
 
-   
+    /* ---------------- BASE PRICE ---------------- */
+
+    const pricing = calculateFinalPrice({
+      pricePerDay,
+      nights,
+    });
+
+    const baseTotal = pricing.totalPrice;
+
+    /* ---------------- COUPON VALIDATION ---------------- */
+
+    let discountAmount = 0;
+    let couponApplied = false;
+    let couponCode = null;
+
+    if (couponCodeFromClient) {
+      const coupon = await Coupon.findOne({
+        code: couponCodeFromClient,
+        isActive: true,
+      }).session(session);
+
+      if (!coupon) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired coupon",
+        });
+      }
+
+      discountAmount = calculateCouponDiscount(coupon, baseTotal);
+      couponApplied = discountAmount > 0;
+      couponCode = coupon.code;
+    }
+
+    /* ---------------- FINAL PRICE ---------------- */
+
+    const finalTotal = Math.max(baseTotal - discountAmount, 0);
+
+    /* ---------------- CREATE BOOKING ---------------- */
+
     const booking = await Booking.create(
       [
         {
@@ -139,7 +207,16 @@ export const createBooking = async (req, res) => {
           checkOut: end,
           totalGuest,
           paymentMode,
-          totalPrice,
+
+          pricePerNight: pricePerDay,
+          basePrice: baseTotal,
+          discountAmount,
+          totalPrice: finalTotal,
+
+          couponCode,
+          couponApplied,
+
+          pricingBreakdown: dynamicPricing.breakdown,
           status: "pending",
           paymentStatus: "pending",
         },
@@ -154,9 +231,11 @@ export const createBooking = async (req, res) => {
       message: "Booking created successfully",
       booking: booking[0],
     });
+
   } catch (error) {
     await session.abortTransaction();
     console.error("Create booking error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -166,13 +245,96 @@ export const createBooking = async (req, res) => {
   }
 };
 
+
+
+export const previewBookingPrice = async (req, res) => {
+  try {
+    const { hotelId, roomId } = req.params;
+    const { checkIn, checkOut, totalGuest } = req.query;
+
+    if (!checkIn || !checkOut || !totalGuest) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+
+    const nights = Math.ceil(
+      (end - start) / (1000 * 60 * 60 * 24)
+    );
+
+    if (nights <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date range",
+      });
+    }
+
+    const room = await Room.findById(roomId)
+      .select("+pricePerDay +totalRooms +hotelId");
+
+    if (!room || room.hotelId.toString() !== hotelId) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
+
+    /* ---------------- OCCUPANCY ---------------- */
+
+    const overlappingBookings = await Booking.countDocuments({
+      roomId,
+      status: { $in: ["pending", "booked"] },
+      checkIn: { $lt: end },
+      checkOut: { $gt: start },
+    });
+
+    const occupancyRate =
+      room.totalRooms > 0
+        ? overlappingBookings / room.totalRooms
+        : 0;
+
+    /* ---------------- DYNAMIC PRICING ---------------- */
+
+    const dynamicPricing = await calculateDynamicPrice({
+  basePrice: room.pricePerDay,
+  checkIn: start,
+  checkOut: end,
+  hotelId,
+  occupancyRate,
+});
+
+const pricing = calculateFinalPrice({
+  pricePerDay: dynamicPricing.pricePerDay,
+  nights,
+});
+
+
+    return res.status(200).json({
+      success: true,
+      pricing,
+    });
+
+  } catch (error) {
+    console.error("Price preview error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to calculate price",
+    });
+  }
+};
+
+
+
 export const confirmBooking = async (req, res) => {
   
   try {
     const { bookingId } = req.params;
     const userId = req.userId;
 
-    // auth
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -184,7 +346,7 @@ export const confirmBooking = async (req, res) => {
       return res.status(400).json({success:false,message:"Booking id must be provide"})
     }
 
-    // findBookking
+   
     const booking = await Booking.findById(bookingId);
     
 
@@ -195,7 +357,7 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
-    // ownership
+ 
     if (booking.userId.toString() !== userId.toString()) {
   return res.status(403).json({
     success: false,
@@ -224,7 +386,7 @@ export const confirmBooking = async (req, res) => {
 
 
    const roomId = booking.roomId?._id ?? booking.roomId;
-    // find room
+
     const room = await Room.findById(roomId);
     if (!room) {
       return res.status(404).json({
@@ -247,7 +409,7 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
-    // cnfrm booking
+
     booking.status = "booked";
     await booking.save();
 
@@ -281,6 +443,8 @@ export const cancelBooking = async (req, res) => {
       _id: bookingId,
       userId,
     });
+
+    const payment = await Payment.findOne({userId,bookingId})
 
     if (!booking) {
       return res.status(404).json({
@@ -318,7 +482,7 @@ export const cancelBooking = async (req, res) => {
     let refundMessage = "No refund";
 
     if (booking.status === "pending") {
-      refundAmount = booking.totalPrice;
+      refundAmount = payment.amount;
       refundMessage = "Full refund (pending booking)";
     }
 
@@ -326,8 +490,13 @@ export const cancelBooking = async (req, res) => {
       const hoursBeforeCheckIn =
         (new Date(booking.checkIn) - new Date()) / (1000 * 60 * 60);
 
+        if(hoursBeforeCheckIn >= 24 && payment.paymentMode === 'COD'){
+          refundAmount = 0;
+        refundMessage = "No refund";
+        }
+
       if (hoursBeforeCheckIn >= 24) {
-        refundAmount = booking.totalPrice;
+        refundAmount = payment.amount;
         refundMessage = "Full refund (canceled before 24 hours)";
       } else {
         refundAmount = 0;
@@ -342,7 +511,7 @@ export const cancelBooking = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Booking canceled successfully",
+      message: `Booking canceled successfully ,Your ${refundAmount} will be refunded in your account within 24 hours`,
       refundAmount,
       refundMessage,
     });
@@ -682,7 +851,6 @@ export const autoCancelledPendingBooking = async () => {
     console.error("Auto cancel pending booking error:", error);
   }
 };
-
 export const getUpcomingBooking = async (req, res) => {
   try {
     const userId = req.userId;
@@ -694,23 +862,17 @@ export const getUpcomingBooking = async (req, res) => {
       });
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    // ✅ Use DATE object (not string)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const upcomingBookings = await Booking.find({
       userId,
-      checkIn: { $gte: today },
+      checkIn: { $gte: today },          
       status: { $ne: "canceled" },
-      paymentStatus: "confirm"
+      paymentStatus: "success"         
     })
-    .sort({ checkIn: 1 });
-
-    if (upcomingBookings.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "No upcoming bookings",
-        upcomingBookings: []
-      });
-    }
+    .sort({ checkIn: 1 }).populate('hotelId','name city').populate('roomId','title');
 
     return res.status(200).json({
       success: true,
@@ -726,6 +888,7 @@ export const getUpcomingBooking = async (req, res) => {
     });
   }
 };
+
 
 
 // export const getBookingStats = async (req, res) => {
@@ -895,7 +1058,7 @@ export const verifyPayment = async (req, res) => {
     return res.status(404).json({ success: false, message: "Booking not found" });
   }
 
-  booking.paymentStatus = "confirm";
+  booking.paymentStatus = "success";
   await booking.save();
 
   res.status(200).json({
@@ -904,4 +1067,51 @@ export const verifyPayment = async (req, res) => {
   });
 };
 
+export const deleteBooking = async (req,res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.userId;
 
+    // 1️⃣ Find booking
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    // 2️⃣ Ownership check
+    if (!booking.userId.equals(userId)) {
+  return res.status(403).json({
+    success: false,
+    message: "Not authorized to delete this booking",
+  });
+}
+
+
+    // 3️⃣ Allow delete ONLY for past or cancelled bookings
+    if (!["canceled", "completed"].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Only past or cancelled bookings can be deleted",
+      });
+    }
+
+    // 4️⃣ Delete booking
+    await booking.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete booking error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete booking",
+    });
+  }
+}

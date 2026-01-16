@@ -1,5 +1,5 @@
 import express from "express";
-import { createRazorpayOrder, paymentOnCOD, paymentOnStripe, verifyRazorpayPayment, verifyStripePayment } from "../controllers/payment.controllers.js";
+import { confirmRazorpayBooking, createRazorpayOrder, paymentOnCOD, paymentOnStripe, verifyRazorpayPayment, verifyStripePayment } from "../controllers/payment.controllers.js";
 import { protect } from "../middelwares/auth.js";
 
 
@@ -12,25 +12,11 @@ paymentRouter2.post(
   paymentOnCOD
 );
 
-paymentRouter2.get('/a',()=>"Hello")
-
-
-paymentRouter2.post(
-  "/stripe/:bookingId",
-  protect,
-  paymentOnStripe
-);
 
 paymentRouter2.get(
   "/stripe/verify",
-  verifyStripePayment
-);
-
-
-paymentRouter2.post(
-  "/razorpay/:bookingId",
   protect,
-  createRazorpayOrder
+  verifyStripePayment
 );
 
 // Verify Razorpay payment
@@ -39,5 +25,24 @@ paymentRouter2.post(
   protect,
   verifyRazorpayPayment
 );
+paymentRouter2.post(
+  "/stripe/:bookingId",
+  protect,
+  paymentOnStripe
+);
+
+
+
+paymentRouter2.post(
+  "/razorpay/:bookingId",
+  protect,
+  createRazorpayOrder
+);
+paymentRouter2.patch(
+  "/razorpay/confirm/:bookingId",
+  protect,
+  confirmRazorpayBooking
+);
+
 
 export default paymentRouter2;

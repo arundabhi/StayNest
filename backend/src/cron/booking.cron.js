@@ -4,7 +4,7 @@ import { autoPromoteWaitlist, expireWaitlistEntries } from "../controllers/waitl
 
 
 
-cron.schedule("*/15 * * * *", async () => { // Every 15 minutes
+cron.schedule("*/15 * * * *", async () => { 
   console.log("🔄 Running auto-cancel pending bookings...");
   await autoCancelledPendingBooking();
 });

@@ -25,7 +25,7 @@ export const adminLogin = async (req, res) => {
         role: "admin",
       },
       process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: ACCESS_TOKEN_EXPIRES }
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES}
     );
 
     return res.status(200).json({

@@ -1,59 +1,55 @@
 import express from "express";
-
 import {
-  addToWishlist,
-  removeFromWishlist,
-  getUserWishlist,
   toggleWishlist,
   isWishlisted,
+  getUserWishlist,
+  removeFromWishlist,
   getWishlistCount,
 } from "../controllers/wishlist.controllers.js";
-
 import { protect } from "../middelwares/auth.js";
 
 const wishlistRouter = express.Router();
 
+/**
+ * ❤️ Toggle wishlist (HOTEL-level, room optional)
+ * BODY: { hotelId } OR { roomId }
+ */
 wishlistRouter.post(
-  "/add/:hotelId/:roomId",
+  "/toggle",
   protect,
-  addToWishlist
+  toggleWishlist
 );
 
-
-wishlistRouter.post(
-  "/add/:hotelId",
+/**
+ * ❤️ Check if hotel is wishlisted
+ */
+wishlistRouter.get(
+  "/is-wishlisted/:hotelId",
   protect,
-  addToWishlist
+  isWishlisted
 );
 
-
-wishlistRouter.delete(
-  "/:wishlistId",
-  protect,
-  removeFromWishlist
-);
-
-
+/**
+ * 📄 Get user wishlist
+ */
 wishlistRouter.get(
   "/",
   protect,
   getUserWishlist
 );
 
-
-wishlistRouter.post(
-  "/toggle/:roomId",
+/**
+ * ❌ Remove wishlist item
+ */
+wishlistRouter.delete(
+  "/:wishlistId",
   protect,
-  toggleWishlist
+  removeFromWishlist
 );
 
-
-wishlistRouter.get(
-  "/check/:roomId",
-  protect,
-  isWishlisted
-);
-
+/**
+ * 🔢 Wishlist count (navbar badge)
+ */
 wishlistRouter.get(
   "/count",
   protect,

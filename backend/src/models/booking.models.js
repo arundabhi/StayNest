@@ -61,6 +61,8 @@ const bookingSchema = new Schema(
       enum:  ["pending", "processing", "success", "failed", "canceled"],
       default: "pending",
     },
+    discountAmount: Number,    
+    basePrice: Number,    
     couponApplied: { type: Boolean, default: false },
     couponCode: String
 

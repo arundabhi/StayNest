@@ -1,6 +1,7 @@
 import { Booking } from "../models/booking.models.js";
 import { Hotel } from "../models/hotel.models.js";
 import { Room } from "../models/room.models.js";
+import { calculateDynamicPrice } from "../utils/calculateDynamicPrice.utils.js";
 import uploadCloudinary from "../utils/cloudinary.utils.js";
 import mongoose from 'mongoose'
 
@@ -193,7 +194,7 @@ export const updateRoomImages = async (req, res) => {
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
 
-    // ✅ Validate files
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -201,7 +202,6 @@ export const updateRoomImages = async (req, res) => {
       });
     }
 
-    // ✅ Ownership check
     const hotel = await Hotel.findOne({
       _id: hotelId,
       owner: userId,
@@ -214,7 +214,7 @@ export const updateRoomImages = async (req, res) => {
       });
     }
 
-    // ✅ Check room belongs to hotel
+
     const room = await Room.findOne({
       _id: roomId,
       hotelId,
@@ -227,14 +227,14 @@ export const updateRoomImages = async (req, res) => {
       });
     }
 
-    // ✅ Upload images (parallel)
+
     const images = await Promise.all(
       req.files.map(file =>
         uploadCloudinary(file.buffer).then(res => res.secure_url)
       )
     );
 
-    // ✅ Update images (REPLACE)
+
     room.images = images;
     await room.save();
 
@@ -258,7 +258,7 @@ export const deleteRoom = async (req, res) => {
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
 
-    // ✅ Ownership check
+
     const hotel = await Hotel.findOne({
       _id: hotelId,
       owner: userId,
@@ -271,7 +271,6 @@ export const deleteRoom = async (req, res) => {
       });
     }
 
-    // ✅ Ensure room belongs to hotel
     const room = await Room.findOne({
       _id: roomId,
       hotelId,
@@ -284,7 +283,6 @@ export const deleteRoom = async (req, res) => {
       });
     }
 
-    // ❗ Optional: Prevent deletion if bookings exist
 
     const hasBookings = await Booking.exists({ roomId });
     if (hasBookings) {
@@ -347,7 +345,7 @@ export const getRoomById = async (req, res) => {
   try {
     const { roomId } = req.params;
 
-    // Optional: validate MongoDB ObjectId
+
     if (!roomId) {
       return res.status(400).json({
         success: false,
@@ -454,7 +452,7 @@ export const checkRoomAvailability = async (req, res) => {
       });
     }
 
-    // 🔒 Owner-disabled room
+
     if (!room.isAvailable) {
       return res.status(200).json({
         success: true,
@@ -497,7 +495,7 @@ export const searchRooms = async (req, res) => {
   try {
     const { hotelId, maxGuests, minPrice, maxPrice } = req.query;
 
-    // 🔒 Validate hotelId
+
     if (!hotelId || !mongoose.Types.ObjectId.isValid(hotelId)) {
       return res.status(400).json({
         success: false,
@@ -510,12 +508,12 @@ export const searchRooms = async (req, res) => {
       isAvailable: true,
     };
 
-    // 👥 Guests filter
+ 
     if (maxGuests) {
       query.maxGuests = { $gte: Number(maxGuests) };
     }
 
-    // 💰 Price filter
+
     if (minPrice || maxPrice) {
       query.pricePerDay = {};
       if (minPrice) query.pricePerDay.$gte = Number(minPrice);
@@ -544,7 +542,7 @@ export const getRoomStats = async (req, res) => {
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
 
-    // 🔐 Ownership check
+ 
     const hotel = await Hotel.findOne({
       _id: hotelId,
       owner: userId,
@@ -557,7 +555,7 @@ export const getRoomStats = async (req, res) => {
       });
     }
 
-    // 🏨 Room validation
+
     const room = await Room.findOne({
       _id: roomId,
       hotelId,
@@ -570,7 +568,7 @@ export const getRoomStats = async (req, res) => {
       });
     }
 
-    // 📊 Booking stats
+
     const totalBookings = await Booking.countDocuments({ roomId });
 
     const confirmedBookings = await Booking.countDocuments({
@@ -583,7 +581,6 @@ export const getRoomStats = async (req, res) => {
       status: "cancelled",
     });
 
-    // 💰 Revenue
     const revenueAgg = await Booking.aggregate([
       {
         $match: {
@@ -601,12 +598,11 @@ export const getRoomStats = async (req, res) => {
 
     const totalRevenue = revenueAgg[0]?.totalRevenue || 0;
 
-    // 📅 Last booking
     const lastBooking = await Booking.findOne({ roomId })
       .sort({ createdAt: -1 })
       .select("createdAt");
 
-    // 📈 Occupancy rate (simple version)
+
     const occupancyRate =
       room.totalRooms > 0
         ? ((confirmedBookings / room.totalRooms) * 100).toFixed(2)
@@ -637,3 +633,4 @@ export const getRoomStats = async (req, res) => {
     });
   }
 };
+

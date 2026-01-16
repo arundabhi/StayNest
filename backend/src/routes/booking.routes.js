@@ -9,11 +9,10 @@ import {
   updatePaymentStatus,
   getPastBooking,
   getUpcomingBooking,
-  getBookingStats,
-  getHotelRevenue,
-  getMonthlyHotelRevenue,
   confirmBooking,
-  verifyPayment
+  verifyPayment,
+  previewBookingPrice,
+  deleteBooking
 } from "../controllers/booking.controllers.js";
 import { protect } from "../middelwares/auth.js";
 import { authorizeRoles } from "../middelwares/role.js";
@@ -24,11 +23,16 @@ const bookingRouter = express.Router();
 bookingRouter.post("/:hotelId/:roomId",protect,createBooking);
 bookingRouter.patch('/confirm/:bookingId',protect,confirmBooking)
 bookingRouter.patch("/cancel/:bookingId",protect, cancelBooking);
-bookingRouter.get("/my/:bookingId",protect, getMyBooking);
 bookingRouter.get("/my",protect, getAllBookings);
+bookingRouter.get("/my/:bookingId",protect, getMyBooking);
 bookingRouter.get("/past",protect, getPastBooking);
 bookingRouter.get("/upcoming",protect, getUpcomingBooking);
-bookingRouter.get("/stats",protect, getBookingStats);
+bookingRouter.delete("/:bookingId",protect, deleteBooking);
+
+bookingRouter.get(
+  "/price-preview/:hotelId/:roomId",
+  previewBookingPrice
+);
 
 // availability
 bookingRouter.get(
@@ -50,9 +54,7 @@ bookingRouter.patch(
 // owner / admin
 bookingRouter.get("/hotel/:hotelId",protect,
   authorizeRoles("owner", "admin"), getAllBookingsForHotel);
-bookingRouter.get("/hotel/:hotelId/revenue",protect,
-  authorizeRoles("owner", "admin"), getHotelRevenue);
-bookingRouter.get("/hotel/:hotelId/revenue/monthly",protect,
-  authorizeRoles("owner", "admin"), getMonthlyHotelRevenue);
+
+
 
 export default bookingRouter;

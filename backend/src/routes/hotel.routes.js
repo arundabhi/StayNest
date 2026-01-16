@@ -11,7 +11,6 @@ import {
   getNearbyHotels,
   addHotelImages,
   removeHotelImage,
-  getHotelStats,
 } from "../controllers/hotel.controllers.js";
 
 import { protect } from "../middelwares/auth.js";
@@ -87,11 +86,5 @@ hotelRouter.delete(
 );
 
 
-hotelRouter.get(
-  "/stats/dashboard",
-  protect,
-  authorizeRoles("owner", "admin"),
-  getHotelStats
-);
 
 export default hotelRouter;

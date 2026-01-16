@@ -18,6 +18,10 @@ const roomSchema = new Schema(
       required: true, // e.g. "Deluxe Sea View Room"
       trim: true
     },
+    description:{
+      type:String,
+      trim:true
+    },
 
     roomType: {
       type: String,

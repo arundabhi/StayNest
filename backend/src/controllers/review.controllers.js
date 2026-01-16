@@ -9,7 +9,7 @@ export const addReview = async (req, res) => {
     const userId = req.userId;
     const { roomId, hotelId } = req.params;
 
-    // Auth
+  
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -17,7 +17,7 @@ export const addReview = async (req, res) => {
       });
     }
 
-    // Validation
+ 
     if (!message || rating === undefined) {
       return res.status(400).json({
         success: false,
@@ -39,7 +39,6 @@ export const addReview = async (req, res) => {
       });
     }
 
-    // ✅ Check completed booking
     const booking = await Booking.findOne({
       userId,
       hotelId,
@@ -54,7 +53,6 @@ export const addReview = async (req, res) => {
       });
     }
 
-    // ✅ Prevent duplicate review
     const existingReview = await Review.findOne({
       userId,
       hotelId,
@@ -68,7 +66,7 @@ export const addReview = async (req, res) => {
       });
     }
 
-    // ✅ Create review
+
     const review = await Review.create({
       userId,
       hotelId,
@@ -98,7 +96,7 @@ export const deleteReview = async (req, res) => {
     const { reviewId } = req.params;
     const userId = req.userId;
 
-    // Auth
+ 
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -113,7 +111,7 @@ export const deleteReview = async (req, res) => {
       });
     }
 
-    // Find review
+
     const review = await Review.findById(reviewId);
 
     if (!review) {
@@ -123,7 +121,7 @@ export const deleteReview = async (req, res) => {
       });
     }
 
-    // Ownership check
+ 
     if (!review.userId.equals(userId)) {
       return res.status(403).json({
         success: false,

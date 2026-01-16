@@ -9,11 +9,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const paymentOnStripe = async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.userId.toString();
     const { bookingId } = req.params;
 
-    // 1️⃣ Get booking from DB (NEVER trust frontend)
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(bookingId).populate("hotelId", "name");
 
     if (!booking) {
       return res.status(404).json({
@@ -22,7 +21,28 @@ export const paymentOnStripe = async (req, res) => {
       });
     }
 
-    // 2️⃣ Create Stripe session
+
+   if (!booking.userId.equals(req.userId)) {
+  return res.status(403).json({
+    success: false,
+    message: "Not authorized to pay for this booking",
+  });
+}
+
+
+    
+    const existingPayment = await Payment.findOne({
+      bookingId,
+      paymentStatus: { $in: ["processing", "success"] }
+    });
+
+    if (existingPayment) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment already initiated",
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -32,25 +52,29 @@ export const paymentOnStripe = async (req, res) => {
           price_data: {
             currency: "inr",
             product_data: {
-              name: `Hotel Booking - ${booking.hotelId}`,
+              name: `Hotel Booking - ${booking.hotelId.name}`,
             },
-            unit_amount: booking.totalPrice * 100, // ₹ → paise
+            unit_amount: booking.totalPrice * 100, // ✅ paise
           },
           quantity: 1,
         },
       ],
 
+      metadata: {
+        bookingId: booking._id.toString(),
+        userId,
+      },
+
       success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/payment-failed`,
     });
 
-    // 3️⃣ Create Payment record
     await Payment.create({
       userId,
       bookingId,
       amount: booking.totalPrice,
       paymentMode: "STRIPE",
-      paymentStatus: "created",
+      paymentStatus: "processing",
       stripeSessionId: session.id,
     });
 
@@ -67,9 +91,17 @@ export const paymentOnStripe = async (req, res) => {
     });
   }
 };
+
 export const verifyStripePayment = async (req, res) => {
   try {
     const { session_id } = req.query;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        message: "session_id is required",
+      });
+    }
 
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
@@ -80,17 +112,22 @@ export const verifyStripePayment = async (req, res) => {
       });
     }
 
-    // Update payment
     const payment = await Payment.findOneAndUpdate(
       { stripeSessionId: session_id },
       { paymentStatus: "success" },
       { new: true }
     );
 
-    // Confirm booking
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment record not found",
+      });
+    }
+
     await Booking.findByIdAndUpdate(payment.bookingId, {
-      status: "confirmed",
-      paymentStatus: "confirm",
+      status: "booked",
+      paymentStatus: "success",
     });
 
     return res.status(200).json({
@@ -102,10 +139,11 @@ export const verifyStripePayment = async (req, res) => {
     console.error("Stripe verify error:", error);
     return res.status(500).json({
       success: false,
-      message: "Stripe verification failed",
+      message: error.message,
     });
   }
 };
+
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_API_KEY,
@@ -117,7 +155,8 @@ export const createRazorpayOrder = async (req, res) => {
     const userId = req.userId;
     const { bookingId } = req.params;
 
-    // 1️⃣ Get booking (never trust frontend price)
+    console.log(bookingId);
+    
     const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({
@@ -126,20 +165,19 @@ export const createRazorpayOrder = async (req, res) => {
       });
     }
 
-    // 2️⃣ Create Razorpay order
     const order = await razorpay.orders.create({
-      amount: booking.totalPrice, // ₹ → paise
+      amount: booking.totalPrice * 100, 
       currency: "INR",
       receipt: `booking_${bookingId}`,
     });
 
-    // 3️⃣ Save payment record
+    
     await Payment.create({
       userId,
       bookingId,
       amount: booking.totalPrice,
       paymentMode: "RAZORPAY",
-      paymentStatus: "created",
+      paymentStatus: "processing",
       razorpayOrderId: order.id,
     });
 
@@ -148,7 +186,7 @@ export const createRazorpayOrder = async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      key: process.env.RAZORPAY_API_KEY, // frontend needs this
+      key: process.env.RAZORPAY_API_KEY, 
     });
 
   } catch (error) {
@@ -167,15 +205,15 @@ export const verifyRazorpayPayment = async (req, res) => {
       razorpay_signature,
     } = req.body;
 
-    // 1️⃣ Create signature
+
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", process.env.RAZORPAY_SECRET_KEY)
       .update(body)
       .digest("hex");
 
-    // 2️⃣ Compare signature
+  
     if (expectedSignature !== razorpay_signature) {
       return res.status(400).json({
         success: false,
@@ -183,7 +221,6 @@ export const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // 3️⃣ Update payment
     const payment = await Payment.findOneAndUpdate(
       { razorpayOrderId: razorpay_order_id },
       {
@@ -194,10 +231,10 @@ export const verifyRazorpayPayment = async (req, res) => {
       { new: true }
     );
 
-    // 4️⃣ Confirm booking
+ 
     await Booking.findByIdAndUpdate(payment.bookingId, {
-      status: "confirmed",
-      paymentStatus: "confirm",
+      status: "booked",
+      paymentStatus: "success",
     });
 
     return res.status(200).json({
@@ -213,6 +250,19 @@ export const verifyRazorpayPayment = async (req, res) => {
     });
   }
 };
+export const confirmRazorpayBooking = async (req, res) => {
+  const { bookingId } = req.params;
+
+  await Booking.findByIdAndUpdate(bookingId, {
+    status: "booked",
+    paymentStatus: "success",
+  });
+
+  res.json({
+    success: true,
+    message: "Booking confirmed",
+  });
+};
 
 export const paymentOnCOD = async (req, res) => {
   try {
@@ -226,7 +276,7 @@ export const paymentOnCOD = async (req, res) => {
       });
     }
 
-    // 1️⃣ Get booking
+ 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({
@@ -235,18 +285,17 @@ export const paymentOnCOD = async (req, res) => {
       });
     }
 
-    // 2️⃣ Create payment entry (COD)
     await Payment.create({
       userId,
       bookingId,
       amount: booking.totalPrice,
       paymentMode: "COD",
-      paymentStatus: "pending", // money not collected yet
+      paymentStatus: "pending",
     });
 
-    // 3️⃣ Confirm booking immediately
+  
     await Booking.findByIdAndUpdate(bookingId, {
-      status: "confirmed",
+      status: "booked",
       paymentStatus: "pending",
     });
 

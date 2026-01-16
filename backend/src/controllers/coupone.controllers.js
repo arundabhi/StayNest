@@ -346,6 +346,7 @@ export const applyCoupon = async (req, res) => {
         message: "Booking ID and coupon code are required",
       });
     }
+    
 
     const booking = await Booking.findOne({
       _id: bookingId,
@@ -358,6 +359,13 @@ export const applyCoupon = async (req, res) => {
         message: "Booking not found",
       });
     }
+    if (booking.status !== "pending") {
+  return res.status(400).json({
+    success: false,
+    message: "Coupon can only be applied to pending bookings",
+  });
+}
+
 
     if (booking.couponApplied) {
       return res.status(400).json({
@@ -508,7 +516,7 @@ export const validateCoupon = async (req, res) => {
 export const getAvailableCoupons = async (req, res) => {
   try {
     const userId = req.userId;
-    const bookingAmount = Number(req.query.amount) || 0;
+
 
     if (!userId) {
       return res.status(401).json({
@@ -524,10 +532,6 @@ export const getAvailableCoupons = async (req, res) => {
       expiryDate: { $gte: today },
       $expr: { $lt: ["$usedCount", "$usageLimit"] },
     };
-
-    if (bookingAmount > 0) {
-      query.minimumBookingAmount = { $lte: bookingAmount };
-    }
 
     const coupons = await Coupon.find(query)
       .sort({ createdAt: -1 })

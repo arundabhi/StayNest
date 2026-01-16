@@ -11,6 +11,7 @@ import {
   getSmartSearchRecommendations,
   getSpecialOffers,
   getUsersAlsoViewed,
+  getHotelOffer,
 } from "../controllers/recommendation.controllers.js";
 import { protect } from "../middelwares/auth.js";
 
@@ -45,5 +46,6 @@ recommendationRoutes.get("/offers", getSpecialOffers);
 
 // 🔄 Users Also Viewed
 recommendationRoutes.get("/also-viewed/:hotelId", getUsersAlsoViewed);
+recommendationRoutes.get("/offer/:hotelId", getHotelOffer);
 
 export default recommendationRoutes;

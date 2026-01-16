@@ -1,4 +1,4 @@
-// analytics.controllers.js
+
 import { Booking } from "../models/booking.models.js";
 import { Hotel } from "../models/hotel.models.js";
 import { Room } from "../models/room.models.js";
@@ -6,12 +6,12 @@ import { Review } from "../models/review.models.js";
 import { Payment } from "../models/payment.models.js";
 import mongoose from "mongoose";
 
-// 📊 1. Complete Dashboard Overview
+
 export const getDashboardOverview = async (req, res) => {
   try {
     const userId = req.userId;
 
-    // Get owner's hotel
+   
     const hotel = await Hotel.findOne({ owner: userId });
 
     if (!hotel) {
@@ -23,7 +23,6 @@ export const getDashboardOverview = async (req, res) => {
 
     const hotelId = hotel._id;
 
-    // Date ranges
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -35,7 +34,6 @@ export const getDashboardOverview = async (req, res) => {
     );
     const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
 
-    // Parallel queries for better performance
     const [
       totalBookings,
       activeBookings,
@@ -51,10 +49,10 @@ export const getDashboardOverview = async (req, res) => {
       avgRating,
       totalReviews,
     ] = await Promise.all([
-      // Total bookings
+      
       Booking.countDocuments({ hotelId }),
 
-      // Active bookings (current guests)
+     
       Booking.countDocuments({
         hotelId,
         status: "booked",
@@ -62,25 +60,21 @@ export const getDashboardOverview = async (req, res) => {
         checkOut: { $gte: today },
       }),
 
-      // Completed bookings
+     
       Booking.countDocuments({ hotelId, status: "completed" }),
 
-      // Canceled bookings
       Booking.countDocuments({ hotelId, status: "canceled" }),
 
-      // This month bookings
       Booking.countDocuments({
         hotelId,
         createdAt: { $gte: thisMonthStart },
       }),
 
-      // Last month bookings
       Booking.countDocuments({
         hotelId,
         createdAt: { $gte: lastMonthStart, $lt: lastMonthEnd },
       }),
 
-      // Total revenue
       Booking.aggregate([
         {
           $match: {
@@ -91,7 +85,7 @@ export const getDashboardOverview = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$totalPrice" } } },
       ]),
 
-      // This month revenue
+     
       Booking.aggregate([
         {
           $match: {
@@ -103,7 +97,7 @@ export const getDashboardOverview = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$totalPrice" } } },
       ]),
 
-      // Pending payments
+   
       Booking.aggregate([
         {
           $match: {
@@ -114,13 +108,12 @@ export const getDashboardOverview = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$totalPrice" } } },
       ]),
 
-      // Total rooms
+  
       Room.aggregate([
         { $match: { hotelId: new mongoose.Types.ObjectId(hotelId) } },
         { $group: { _id: null, total: { $sum: "$totalRooms" } } },
       ]),
 
-      // Currently occupied rooms
       Booking.aggregate([
         {
           $match: {
@@ -133,17 +126,17 @@ export const getDashboardOverview = async (req, res) => {
         { $count: "occupied" },
       ]),
 
-      // Average rating
+     
       Review.aggregate([
         { $match: { hotelId: new mongoose.Types.ObjectId(hotelId) } },
         { $group: { _id: null, avg: { $avg: "$rating" } } },
       ]),
 
-      // Total reviews
+    
       Review.countDocuments({ hotelId }),
     ]);
 
-    // Calculate growth percentages
+  
     const bookingGrowth =
       lastMonthBookings > 0
         ? (((thisMonthBookings - lastMonthBookings) / lastMonthBookings) *
@@ -215,7 +208,6 @@ export const getRevenueChart = async (req, res) => {
 
     const hotelId = hotel._id;
 
-    // Get last 12 months of revenue
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
@@ -262,7 +254,6 @@ export const getRevenueChart = async (req, res) => {
       },
     ]);
 
-    // Fill in missing months with 0 revenue
     const monthNames = [
       "Jan", "Feb", "Mar", "Apr", "May", "Jun",
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -383,7 +374,6 @@ export const getRoomPerformance = async (req, res) => {
           Review.countDocuments({ roomId: room._id }),
         ]);
 
-        // Calculate occupancy rate (simplified)
         const occupancyRate = room.totalRooms > 0
           ? ((totalBookings / (room.totalRooms * 30)) * 100).toFixed(1)
           : 0;
@@ -406,7 +396,6 @@ export const getRoomPerformance = async (req, res) => {
       })
     );
 
-    // Sort by revenue
     roomStats.sort((a, b) => b.revenue - a.revenue);
 
     return res.status(200).json({
@@ -494,20 +483,19 @@ export const getReviewAnalytics = async (req, res) => {
     }
 
     const [ratingDistribution, recentReviews, reviewTrend] = await Promise.all([
-      // Rating breakdown (5-star, 4-star, etc.)
+     
       Review.aggregate([
         { $match: { hotelId: new mongoose.Types.ObjectId(hotel._id) } },
         { $group: { _id: "$rating", count: { $sum: 1 } } },
         { $sort: { _id: -1 } },
       ]),
 
-      // Recent reviews
       Review.find({ hotelId: hotel._id })
         .populate("userId", "name")
         .sort({ createdAt: -1 })
         .limit(5),
 
-      // Review trend (last 6 months)
+   
       Review.aggregate([
         {
           $match: {
@@ -587,7 +575,7 @@ export const getPaymentAnalytics = async (req, res) => {
     }
 
     const [paymentMethods, paymentStatus, recentPayments] = await Promise.all([
-      // Payment method breakdown
+ 
       Booking.aggregate([
         { $match: { hotelId: new mongoose.Types.ObjectId(hotel._id) } },
         {
@@ -599,7 +587,7 @@ export const getPaymentAnalytics = async (req, res) => {
         },
       ]),
 
-      // Payment status breakdown
+
       Booking.aggregate([
         { $match: { hotelId: new mongoose.Types.ObjectId(hotel._id) } },
         {
@@ -611,7 +599,7 @@ export const getPaymentAnalytics = async (req, res) => {
         },
       ]),
 
-      // Recent payments
+    
       Payment.find({ 
         bookingId: { $in: await Booking.find({ hotelId: hotel._id }).distinct('_id') }
       })
@@ -655,13 +643,13 @@ export const getGuestAnalytics = async (req, res) => {
     }
 
     const [totalGuests, repeatGuests, topGuests] = await Promise.all([
-      // Total unique guests
+    
       Booking.distinct("userId", { 
         hotelId: hotel._id,
         status: { $in: ["booked", "completed"] }
       }),
 
-      // Repeat customers (booked more than once)
+ 
       Booking.aggregate([
         {
           $match: {
@@ -674,7 +662,7 @@ export const getGuestAnalytics = async (req, res) => {
         { $count: "repeat" },
       ]),
 
-      // Top guests by spending
+
       Booking.aggregate([
         {
           $match: {

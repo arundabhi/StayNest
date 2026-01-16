@@ -9,15 +9,13 @@ import { sendEmail,emailTemplates } from '../utils/sendEmail.utils.js';
 import {
   validateEmail,
   validatePassword,
-  validateObjectId,
-  validateDateRange,
   sanitizeInput,
   validatePhoneNumber
 } from "../utils/validate.utils.js";
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, mobileNumber } = req.body;
+    let { name, email, password, mobileNumber } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: "Missing fields" });
@@ -89,28 +87,65 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Missing credentials" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing credentials",
+      });
     }
 
     const user = await User.findOne({ email });
+
     if (!user || !(await user.matchPassword(password))) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
     }
 
-    const { accessToken, refreshToken } =
-      await generateAccessAndRefreshToken(user);
+    const accessToken = jwt.sign(
+      { id: user._id },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
+    );
 
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      accessToken,
-      refreshToken,
-    });
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
+    );
+
+    // ✅ SAVE refresh token
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return res
+      .status(200)
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .json({
+        success: true,
+        accessToken,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+      });
+
   } catch (error) {
-    console.log("Login error",error)
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
+
+
+
 
 export const logoutUser = async (req, res) => {
   await User.findByIdAndUpdate(req.userId, {
@@ -125,29 +160,57 @@ export const logoutUser = async (req, res) => {
 
 export const refreshAccessToken = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      return res.status(401).json({ message: "Refresh token required" });
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token required",
+      });
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
 
     const user = await User.findById(decoded.id);
+
     if (!user || user.refreshToken !== refreshToken) {
-      return res.status(403).json({ message: "Invalid refresh token" });
+      return res.status(403).json({
+        success: false,
+        message: "Invalid refresh token",
+      });
     }
 
-    const accessToken = user.generateAccessToken();
+    // 🔁 ROTATE TOKENS
+    const { accessToken, refreshToken: newRefreshToken } =
+      await generateAccessAndRefreshToken(user);
 
-    res.status(200).json({
-      success: true,
-      accessToken,
-    });
+    user.refreshToken = newRefreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    res
+      .cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .status(200)
+      .json({
+        success: true,
+        accessToken,
+      });
+
   } catch (error) {
-    res.status(403).json({ message: "Invalid refresh token" });
+    return res.status(403).json({
+      success: false,
+      message: "Invalid or expired refresh token",
+    });
   }
 };
+
 
 export const forgotPassword = async (req, res) => {
   try {

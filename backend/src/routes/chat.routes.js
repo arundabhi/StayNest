@@ -32,7 +32,7 @@ chatRouter.get(
 
 
 chatRouter.patch(
-  "/:hotelId/seen",
+  "/seen/:hotelId",
   protect,
   markMessagesAsSeen
 );

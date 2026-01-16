@@ -24,7 +24,7 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
       });
     }
 
-    // Get room details
+
     const room = await Room.findById(roomId);
     if (!room) {
       return res.status(404).json({
@@ -36,7 +36,7 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Validate date range
+
     if (end <= start) {
       return res.status(400).json({
         success: false,
@@ -44,7 +44,7 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
       });
     }
 
-    // Max 90 days range
+
     const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     if (daysDiff > 90) {
       return res.status(400).json({
@@ -53,7 +53,7 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
       });
     }
 
-    // Get all bookings for this room in the date range
+
     const bookings = await Booking.find({
       roomId,
       status: { $in: ["pending", "booked"] },
@@ -62,14 +62,14 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
       ],
     }).select("checkIn checkOut status totalGuest");
 
-    // Build calendar data day-by-day
+
     const calendar = [];
     const currentDate = new Date(start);
 
     while (currentDate <= end) {
       const dateStr = currentDate.toISOString().split("T")[0];
 
-      // Count bookings for this specific date
+     
       const bookedCount = bookings.filter((booking) => {
         const bookingStart = new Date(booking.checkIn);
         const bookingEnd = new Date(booking.checkOut);
@@ -125,7 +125,7 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
 export const getHotelAvailabilityCalendar = async (req, res) => {
   try {
     const { hotelId } = req.params;
-    const { startDate, endDate } = req.query;
+    const { checkIn, checkOut } = req.query;
 
     if (!hotelId) {
       return res.status(400).json({
@@ -134,7 +134,7 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
       });
     }
 
-    if (!startDate || !endDate) {
+    if (!checkIn || !checkOut) {
       return res.status(400).json({
         success: false,
         message: "Start date and end date are required",
@@ -161,8 +161,8 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
       });
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
 
     const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     if (daysDiff > 90) {
@@ -219,7 +219,7 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
 
       calendar.push({
         date: dateStr,
-        dayOfWeek: currentDate.toLocaleDateString("en-US", { weekday: "short" }),
+        dayOfWeek: currentDate.toLocaleDateString("en-IN", { weekday: "short" }),
         totalRooms: totalRoomsCount,
         bookedRooms: totalBooked,
         availableRooms: totalAvailable,
@@ -241,8 +241,8 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
         totalRooms: totalRoomsCount,
       },
       dateRange: {
-        start: startDate,
-        end: endDate,
+        start: checkIn,
+        end: checkOut,
         days: daysDiff,
       },
       calendar,

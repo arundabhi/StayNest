@@ -1,4 +1,6 @@
+import { Booking } from "../models/booking.models.js";
 import { Hotel } from "../models/hotel.models.js";
+import { Room } from "../models/room.models.js";
 import uploadCloudinary from "../utils/cloudinary.utils.js";
 
 export const registerHotel = async (req, res) => {
@@ -21,10 +23,9 @@ export const registerHotel = async (req, res) => {
       });
     }
 
-    // ✅ OWNER ID FROM TOKEN
+
     const ownerId = req.userId;
 
-    // 🔥 IMPORTANT: CHECK IF OWNER ALREADY HAS A HOTEL
     const existingHotel = await Hotel.findOne({ owner: ownerId });
 
     if (existingHotel) {
@@ -34,7 +35,7 @@ export const registerHotel = async (req, res) => {
       });
     }
 
-    // Amenities handling
+  
     let amenities = req.body.amenities;
     if (!amenities) {
       amenities = [];
@@ -49,7 +50,6 @@ export const registerHotel = async (req, res) => {
       });
     }
 
-    // Images upload
     const images = [];
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -63,7 +63,7 @@ export const registerHotel = async (req, res) => {
       images.push(result.secure_url);
     }
 
-    // Create hotel
+
     const hotel = await Hotel.create({
       owner: ownerId,
       name,
@@ -236,34 +236,84 @@ export const getHotelById = async (req, res) => {
 
 export const searchHotel = async (req, res) => {
   try {
-    const { name } = req.query;
+    const { destination, checkIn, checkOut, guests } = req.query;
 
-    if (!name) {
+    if (!destination) {
       return res.status(400).json({
         success: false,
-        message: "Search keyword is required",
+        message: "Destination is required",
       });
     }
 
+    // 1️⃣ Find hotels by name / city / state
     const hotels = await Hotel.find({
       $or: [
-        { name: { $regex: name, $options: "i" } },
-        { city: { $regex: name, $options: "i" } },
-        { state: { $regex: name, $options: "i" } },
+        { name: { $regex: destination, $options: "i" } },
+        { city: { $regex: destination, $options: "i" } },
+        { state: { $regex: destination, $options: "i" } },
       ],
     });
 
-    if (hotels.length === 0) {
+    if (!hotels.length) {
       return res.status(404).json({
         success: false,
         message: "No hotels found",
       });
     }
 
+    // 2️⃣ If no dates provided → return basic search
+    if (!checkIn || !checkOut) {
+      return res.status(200).json({
+        success: true,
+        hotels,
+      });
+    }
+
+    // 3️⃣ Filter hotels by room availability
+    const availableHotels = [];
+
+    for (const hotel of hotels) {
+      const rooms = await Room.find({
+        hotelId: hotel._id,
+        maxGuests: { $gte: Number(guests || 1) },
+      });
+
+      let hasAvailableRoom = false;
+
+      for (const room of rooms) {
+        const bookedRooms = await Booking.countDocuments({
+          roomId: room._id,
+          status: { $in: ["pending", "booked"] },
+          $or: [
+            {
+              checkIn: { $lt: new Date(checkOut) },
+              checkOut: { $gt: new Date(checkIn) },
+            },
+          ],
+        });
+
+        if (bookedRooms < room.totalRooms) {
+          hasAvailableRoom = true;
+          break;
+        }
+      }
+
+      if (hasAvailableRoom) {
+        availableHotels.push(hotel);
+      }
+    }
+
+    if (!availableHotels.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No hotels available for selected dates",
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Hotels fetched successfully",
-      hotels,
+      message: "Available hotels fetched",
+      hotels: availableHotels,
     });
   } catch (error) {
     console.error("Search hotel error:", error);

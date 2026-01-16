@@ -1,9 +1,10 @@
 import { Chat } from "../models/chat.models.js";
+import { Hotel } from "../models/hotel.models.js";
 
 const connections = {};
 
 export const sseController = (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.userId;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -94,10 +95,12 @@ export const getChatMessages = async (req, res) => {
       Chat.find({ userId, hotelId })
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit).populate("Hotel",'name city'),
 
       Chat.countDocuments({ userId, hotelId }),
     ]);
+
+
 
     return res.status(200).json({
       success: true,

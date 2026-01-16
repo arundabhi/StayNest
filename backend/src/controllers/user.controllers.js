@@ -90,7 +90,7 @@ export const changePassword = async (req, res) => {
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
-    user.refreshToken = undefined; // invalidate sessions
+    user.refreshToken = undefined;
     await user.save();
 
     return res.status(200).json({

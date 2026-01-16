@@ -6,10 +6,9 @@ import { Waitlist } from "../models/waitlist.model.js";
 export const addToWaitlist = async (req, res) => {
   try {
     const userId = req.userId;
-    const { checkIn, checkOut } = req.body;
+    const { checkIn, checkOut ,totalGuest} = req.body;
     const { roomId } = req.params;
 
-    // -------- AUTH CHECK ----------
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -17,7 +16,6 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-    // -------- ROOM ID CHECK ----------
     if (!roomId) {
       return res.status(400).json({
         success: false,
@@ -25,7 +23,6 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-    // -------- DATE VALIDATION ----------
     if (!checkIn || !checkOut) {
       return res.status(400).json({
         success: false,
@@ -50,7 +47,6 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-    // -------- FIND ROOM ----------
     const room = await Room.findById(roomId);
     if (!room) {
       return res.status(404).json({
@@ -59,7 +55,6 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-    // -------- CHECK ACTIVE BOOKINGS ----------
     const activeBookings = await Booking.countDocuments({
       roomId,
       status: { $in: ["pending", "booked"] },
@@ -72,7 +67,6 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-    // -------- CHECK IF ALREADY WAITLISTED ----------
     const alreadyWaitlisted = await Waitlist.findOne({
       userId,
       roomId,
@@ -88,11 +82,12 @@ export const addToWaitlist = async (req, res) => {
       });
     }
 
-    // -------- ADD TO WAITLIST ----------
+
     const waitlistEntry = await Waitlist.create({
       userId,
       hotelId: room.hotelId,
       roomId,
+      totalGuest,
       checkIn: checkInDate,
       checkOut: checkOutDate,
       status: "waiting",
@@ -103,7 +98,6 @@ export const addToWaitlist = async (req, res) => {
       message: "Added to waitlist successfully",
       waitlist: waitlistEntry,
     });
-
   } catch (error) {
     console.error("Add to waitlist error:", error);
     return res.status(500).json({
@@ -140,7 +134,6 @@ export const getUserWaitlist = async (req, res) => {
       message: "User waitlist found",
       waitlists,
     });
-
   } catch (error) {
     console.error("Get user waitlist error:", error);
     return res.status(500).json({
@@ -206,7 +199,6 @@ export const getRoomWaitlist = async (req, res) => {
       count: waitlists.length,
       waitlists,
     });
-
   } catch (error) {
     console.error("Get room waitlist error:", error);
     return res.status(500).json({
@@ -215,7 +207,6 @@ export const getRoomWaitlist = async (req, res) => {
     });
   }
 };
-
 
 export const promoteWaitlistBooking = async (req, res) => {
   try {
@@ -228,7 +219,6 @@ export const promoteWaitlistBooking = async (req, res) => {
       });
     }
 
-
     const room = await Room.findById(roomId);
     if (!room) {
       return res.status(404).json({
@@ -236,7 +226,6 @@ export const promoteWaitlistBooking = async (req, res) => {
         message: "Room not found",
       });
     }
-
 
     const activeBookings = await Booking.countDocuments({
       roomId,
@@ -250,7 +239,6 @@ export const promoteWaitlistBooking = async (req, res) => {
       });
     }
 
- 
     const waitlist = await Waitlist.findOne({
       roomId,
       status: "waiting",
@@ -263,7 +251,6 @@ export const promoteWaitlistBooking = async (req, res) => {
       });
     }
 
-   
     const existingBooking = await Booking.findOne({
       userId: waitlist.userId,
       roomId,
@@ -279,24 +266,23 @@ export const promoteWaitlistBooking = async (req, res) => {
         message: "User already has an active booking",
       });
     }
-const diffDays = Math.ceil((waitlist.checkOut - waitlist.checkIn) / (1000 * 60 * 60 * 24));
-const totalPrice = room.pricePerDay * diffDays;
+    const diffDays = Math.ceil(
+      (waitlist.checkOut - waitlist.checkIn) / (1000 * 60 * 60 * 24)
+    );
+    const totalPrice = room.pricePerDay * diffDays;
 
-const booking = await Booking.create({
-  userId: waitlist.userId,
-  hotelId: waitlist.hotelId,
-  roomId,
-  checkIn: waitlist.checkIn,
-  checkOut: waitlist.checkOut,
-  totalGuest: waitlist.totalGuest,
-  totalPrice, 
-  status: "pending",
-  paymentStatus: "pending",
-  paymentMode: "cod",
-});
-
-
-
+    const booking = await Booking.create({
+      userId: waitlist.userId,
+      hotelId: waitlist.hotelId,
+      roomId,
+      checkIn: waitlist.checkIn,
+      checkOut: waitlist.checkOut,
+      totalGuest: waitlist.totalGuest,
+      totalPrice,
+      status: "pending",
+      paymentStatus: "pending",
+      paymentMode: "cod",
+    });
 
     waitlist.status = "promoted";
     await waitlist.save();
@@ -306,7 +292,6 @@ const booking = await Booking.create({
       message: "Waitlist user promoted successfully",
       booking,
     });
-
   } catch (error) {
     console.error("Promote waitlist error:", error);
     return res.status(500).json({
@@ -326,7 +311,6 @@ export const autoPromoteWaitlist = async () => {
       const room = await Room.findById(roomId);
       if (!room) continue;
 
-
       const activeBookings = await Booking.countDocuments({
         roomId,
         status: { $in: ["pending", "booked"] },
@@ -341,7 +325,6 @@ export const autoPromoteWaitlist = async () => {
 
       if (!waitlist) continue;
 
- 
       const alreadyBooked = await Booking.findOne({
         userId: waitlist.userId,
         roomId,
@@ -365,7 +348,6 @@ export const autoPromoteWaitlist = async () => {
         paymentStatus: "pending",
         paymentMode: "online",
       });
-
 
       waitlist.status = "promoted";
       await waitlist.save();
@@ -405,7 +387,6 @@ export const removeFromWaitlist = async (req, res) => {
       });
     }
 
-    // Ownership check
     if (!waitlist.userId.equals(userId)) {
       return res.status(403).json({
         success: false,
@@ -413,7 +394,7 @@ export const removeFromWaitlist = async (req, res) => {
       });
     }
 
-    // Only waiting entries can be removed
+
     if (waitlist.status !== "waiting") {
       return res.status(400).json({
         success: false,
@@ -427,7 +408,6 @@ export const removeFromWaitlist = async (req, res) => {
       success: true,
       message: "Removed from waitlist successfully",
     });
-
   } catch (error) {
     console.error("Remove from waitlist error:", error);
     return res.status(500).json({
@@ -453,9 +433,7 @@ export const expireWaitlistEntries = async () => {
       }
     );
 
-    console.log(
-      `⏳ Expired ${result.modifiedCount} waitlist entries`
-    );
+    console.log(`⏳ Expired ${result.modifiedCount} waitlist entries`);
   } catch (error) {
     console.error("Expire waitlist error:", error);
   }
