@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios.config";
 import {
   User,
   Mail,
@@ -34,7 +34,7 @@ const Profile = () => {
 
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/users/me`, {
+        const res = await api.get(`${import.meta.env.VITE_API_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -57,7 +57,7 @@ const Profile = () => {
 
   const handleUpdateProfile = async () => {
     try {
-      const res = await axios.put(`${import.meta.env.VITE_API_URL}/users/update`, form, {
+      const res = await api.put(`${import.meta.env.VITE_API_URL}/users/update`, form, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(res.data.user);
@@ -70,7 +70,7 @@ const Profile = () => {
 
   const handleChangePassword = async () => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/users/change-password`, passwordForm, {
+      await api.put(`${import.meta.env.VITE_API_URL}/users/change-password`, passwordForm, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPasswordForm({ password: "", newPassword: "" });
@@ -83,7 +83,7 @@ const Profile = () => {
   const handleDeleteAccount = async () => {
     if (!window.confirm("Are you sure? This action cannot be undone.")) return;
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/users/delete`, {
+      await api.delete(`${import.meta.env.VITE_API_URL}/users/delete`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       localStorage.removeItem("accessToken");

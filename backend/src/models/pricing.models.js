@@ -30,7 +30,9 @@ const pricingSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Hotel",
       required: true
-    }
+    },
+    specialOfferPercent:Number,           // ✅ store for audit
+    specialOfferAmount:Number
   },
   { timestamps: true }
 );

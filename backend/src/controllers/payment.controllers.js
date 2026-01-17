@@ -3,6 +3,7 @@ import { Payment } from "../models/payment.models.js";
 import Stripe from "stripe";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { Hotel } from "../models/hotel.models.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -309,6 +310,81 @@ export const paymentOnCOD = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "COD payment failed",
+    });
+  }
+};
+
+export const getMyPayments = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const payments = await Payment.find({ userId })
+      .populate({
+        path: "bookingId",
+        select: "hotelId checkIn checkOut totalPrice status paymentStatus",
+        populate: {
+          path: "hotelId",
+          select: "name city",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      payments,
+    });
+
+  } catch (error) {
+    console.error("Get user payments error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch payments",
+    });
+  }
+};
+export const getHotelPayments = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+
+    // 🔒 Owner → Hotel
+    const hotel = await Hotel.findOne({ owner: ownerId });
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: "Hotel not found",
+      });
+    }
+
+    // 🔍 Find bookings for this hotel
+    const bookingIds = await Booking.find({ hotelId: hotel._id }).distinct("_id");
+
+    const payments = await Payment.find({
+      bookingId: { $in: bookingIds },
+    })
+      .populate({
+        path: "bookingId",
+        select: "checkIn checkOut totalPrice status paymentStatus",
+        populate: {
+          path: "userId",
+          select: "name email",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      hotel: {
+        name: hotel.name,
+        city: hotel.city,
+      },
+      payments,
+    });
+
+  } catch (error) {
+    console.error("Get hotel payments error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch hotel payments",
     });
   }
 };

@@ -10,7 +10,7 @@ const redirect = params.get("redirect")
   ? decodeURIComponent(params.get("redirect"))
   : "/";
 
-  console.log(redirect);
+
   
 
   // modes: login | register | forgot | reset

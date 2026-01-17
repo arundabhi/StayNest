@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios.config";
 import toast from "react-hot-toast";
 
 const Payment = () => {
@@ -16,7 +16,7 @@ const Payment = () => {
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const res = await axios.get(
+        const res = await api.get(
           `${import.meta.env.VITE_API_URL}/bookings/my/${bookingId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -53,7 +53,7 @@ const Payment = () => {
 
       /* STRIPE */
       if (paymentMode === "STRIPE") {
-        const res = await axios.post(
+        const res = await api.post(
           `${import.meta.env.VITE_API_URL}/payment/stripe/${bookingId}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
@@ -64,7 +64,7 @@ const Payment = () => {
 
       /* RAZORPAY */
       if (paymentMode === "RAZORPAY") {
-        const order = await axios.post(
+        const order = await api.post(
           `${import.meta.env.VITE_API_URL}/payment/razorpay/${bookingId}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
@@ -77,7 +77,7 @@ const Payment = () => {
           order_id: order.data.orderId,
           name: booking.hotelId.name,
           handler: async (resp) => {
-            await axios.post(
+            await api.post(
               `${import.meta.env.VITE_API_URL}/payment/razorpay/verify`,
               {
                 bookingId,
@@ -95,7 +95,7 @@ const Payment = () => {
 
       /* COD */
       if (paymentMode === "COD") {
-        await axios.post(
+        await api.post(
           `${import.meta.env.VITE_API_URL}/payment/cod/${bookingId}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }

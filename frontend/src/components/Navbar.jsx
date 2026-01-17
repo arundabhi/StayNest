@@ -1,17 +1,43 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import logo3 from "../assests/logo3.png";
-// Added Heart icon for wishlist
-import { Menu, X, User, LogOut, BookOpen, ChevronDown, Heart } from "lucide-react";
-
+import { 
+  Menu, X, User, LogOut, BookOpen, 
+  ChevronDown, Heart, Clock3, Home, PlusCircle, 
+  User2, LayoutDashboard, BedDouble, CalendarCheck, MessageSquare
+} from "lucide-react";
+import api from '../api/axios.config'
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState("user"); // Default role
   const [scrolled, setScrolled] = useState(false);
-
+  const [myHotelId, setMyHotelId] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const fetchMe = async () => {
+  const res = await api.get("/users/me");
+
+  localStorage.setItem("user", JSON.stringify(res.data.user));
+};
+useEffect(() => {
+  const user = JSON.parse(localStorage.getItem("user"));
+  // If your user object contains the hotel ID directly:
+  if (user?.hotelId) {
+    setMyHotelId(user.hotelId);
+  } else if (user?.role === 'owner') {
+    // Fallback: Fetch the hotel ID if not in localStorage
+    api.get("/hotels/my/hotel").then(res => {
+      if (res.data.hotels?.length > 0) {
+        setMyHotelId(res.data.hotels[0]._id);
+      }
+    });
+  }
+}, [isLoggedIn]);
+useEffect(()=>{
+  fetchMe()
+},[])
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -21,11 +47,14 @@ const Navbar = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
+    const user = JSON.parse(localStorage.getItem("user")); // Assuming user object is stored
     setIsLoggedIn(!!token);
-  }, []);
+    if (user) setUserRole(user.role); 
+  }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
     setIsLoggedIn(false);
     setProfileOpen(false);
     navigate("/auth");
@@ -33,45 +62,57 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const navLinks = [
-    { name: "Home", path: "/" },
-    { name: "Hotels", path: "/hotels" },
-    { name: "Deals", path: "/coupons" },
-    // Option 1: Add Wishlist to main nav links
-    { name: "Wishlist", path: "/wishlist" },
+  // 1. DYNAMIC NAVIGATION LINKS
+  const guestLinks = [
+    { name: "Home", path: "/", icon: <Home size={18} /> },
+    { name: "Hotels", path: "/hotels", icon: <BedDouble size={18} /> },
+    { name: "Deals", path: "/coupons", icon: <Clock3 size={18} /> },
   ];
 
+  const ownerLinks = [
+    { name: "Dashboard", path: "/owner/dashboard", icon: <LayoutDashboard size={18} /> },
+    { 
+    name: "Inventory", 
+    path: myHotelId ? `/owner/hotel/${myHotelId}/rooms` : "/owner/dashboard", 
+    icon: <BedDouble size={18} /> 
+  },
+   
+{ 
+    name: "Chats", 
+    path: myHotelId ? `/owner/hotel/${myHotelId}/chat` : "/owner/dashboard", 
+    icon: <MessageSquare size={18} /> 
+  },
+  ];
+
+  const navLinks = userRole === "owner" ? ownerLinks : guestLinks;
+
   return (
-    <header 
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? "py-2" : "py-4"
-      }`}
-    >
-      <nav className={`mx-auto max-w-7xl px-4 sm:px-6 transition-all duration-300 ${
-        scrolled 
-          ? "bg-white/80 backdrop-blur-lg shadow-sm border border-gray-200/50 rounded-2xl" 
-          : "bg-transparent"
+    <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? "py-2" : "py-4"}`}>
+      <nav className={`mx-auto max-w-7xl px-4 sm:px-6 transition-all duration-500 ${
+        scrolled ? "bg-white/90 backdrop-blur-xl shadow-lg shadow-blue-500/5 border border-slate-200/60 rounded-3xl" : "bg-transparent"
       }`}>
-        <div className="flex items-center justify-between h-14 md:h-16">
+        <div className="flex items-center h-16 md:h-20">
           
-          {/* Logo */}
-          <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate("/")}>
-           
-            <span className={`text-3xl font-black tracking-tighter ${scrolled ? "text-blue-600" : "text-gray-900"}`}>
-              StayNext
-            </span>
+          {/* LEFT: LOGO */}
+          <div className="flex-1 flex items-center">
+            <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate(userRole === "owner" ? "/owner/dashboard" : "/")}>
+              <span className={`text-3xl font-black tracking-tighter text-slate-900`}>
+                STAY<span className="text-blue-600">NEXT</span>
+                {userRole === "owner" && <span className="ml-2 text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-lg align-middle tracking-widest uppercase">Owner</span>}
+              </span>
+            </div>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* 2. CENTER: DYNAMIC LINKS */}
+          <div className="hidden md:flex items-center bg-slate-100/50 p-1.5 rounded-full border border-slate-200/50">
             {navLinks.map((link) => (
               <button
                 key={link.name}
                 onClick={() => navigate(link.path)}
-                className={`px-4 py-2 text-sm font-semibold rounded-full transition-all ${
+                className={`px-6 py-2 text-sm font-bold rounded-full transition-all duration-300 flex items-center gap-2 ${
                   isActive(link.path) 
-                    ? "bg-blue-50 text-blue-600" 
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "bg-white text-blue-600 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 {link.name}
@@ -79,119 +120,109 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Right Side Actions */}
-          <div className="flex items-center gap-3">
-            {/* Wishlist Quick Icon (Desktop Only) */}
-            {isLoggedIn && (
+          {/* 3. RIGHT: ACTIONS */}
+          <div className="flex-1 flex items-center justify-end gap-2 lg:gap-4">
+            
+            {/* Conditional Button: List Property for Guests vs Add Room for Owners */}
+            {userRole !== "owner" ? (
               <button 
-                onClick={() => navigate("/wishlist")}
-                className={`hidden md:flex p-2 rounded-full transition-colors ${isActive('/wishlist') ? 'text-rose-500 bg-rose-50' : 'text-gray-600 hover:bg-gray-100 hover:text-rose-500'}`}
+                onClick={() => navigate("/list-property")}
+                className={`hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border ${
+                  scrolled 
+                  ? "border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white" 
+                  : "border-white/20 text-slate-900 bg-white shadow-sm hover:shadow-md"
+                }`}
               >
-                <Heart size={22} fill={isActive('/wishlist') ? "currentColor" : "none"} />
+                <PlusCircle size={16} />
+                List Property
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate("/owner/add-room")}
+                className="hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all bg-slate-900 text-white hover:bg-blue-600 shadow-lg shadow-slate-200"
+              >
+                <PlusCircle size={16} />
+                Add Room
               </button>
             )}
 
             {!isLoggedIn ? (
-              <div className="hidden md:flex items-center gap-2">
-                <button
-                  onClick={() => navigate("/auth")}
-                  className="px-5 py-2 text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors"
-                >
-                  Log in
-                </button>
-                <button
-                  onClick={() => navigate("/auth")}
-                  className="px-5 py-2.5 text-sm font-bold bg-gray-900 text-white rounded-xl hover:bg-blue-600 transition-all shadow-lg shadow-gray-200 active:scale-95"
-                >
-                  Sign up
-                </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => navigate("/auth")} className="hidden sm:block px-4 py-2 text-sm font-bold text-slate-700 hover:text-blue-600">Log in</button>
+                <button onClick={() => navigate("/auth")} className="px-5 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-2xl hover:bg-slate-900 transition-all shadow-lg shadow-blue-200">Join</button>
               </div>
             ) : (
               <div className="relative">
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 p-1 pr-3 rounded-full border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all active:scale-95"
+                  className="flex items-center gap-2 p-1.5 rounded-2xl border border-slate-200 bg-white hover:border-blue-300 transition-all"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white ${userRole === 'owner' ? 'bg-blue-600' : 'bg-slate-900'}`}>
                     <User size={16} />
                   </div>
-                  <ChevronDown size={14} className={`text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={14} className={`text-slate-400 transition-transform hidden sm:block ${profileOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Profile Dropdown */}
                 {profileOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)}></div>
-                    <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                      <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Account</p>
+                    <div className="absolute right-0 mt-3 w-64 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200 origin-top-right p-2">
+                      <div className="px-4 py-3 mb-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{userRole} Account</p>
                       </div>
                       
-                      <div className="p-1">
-                        <DropdownItem icon={<BookOpen size={16} />} label="My Bookings" onClick={() => { navigate("/bookings"); setProfileOpen(false); }} />
-                        {/* Added Wishlist to Dropdown */}
-                        <DropdownItem icon={<Heart size={16} />} label="My Wishlist" onClick={() => { navigate("/wishlist"); setProfileOpen(false); }} />
-                        <DropdownItem icon={<User size={16} />} label="Profile Settings" onClick={() => { navigate("/profile"); setProfileOpen(false); }} />
-                      </div>
-
-                      <div className="p-1 border-t border-gray-50">
-                        <button
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                        >
-                          <LogOut size={16} /> Logout
-                        </button>
-                      </div>
+                      {/* DYNAMIC DROPDOWN CONTENT */}
+                      {userRole === "owner" ? (
+                        <>
+                          <DropdownItem icon={<LayoutDashboard size={18} />} label="Admin Dashboard" onClick={() => { navigate("/owner/dashboard"); setProfileOpen(false); }} />
+                          <DropdownItem icon={<BedDouble size={18} />} label="Payment Details" onClick={() => { navigate("/owner/payments"); setProfileOpen(false); }} />
+                          <DropdownItem icon={<BookOpen size={18} />} label="Bookings" onClick={() => { navigate("/owner/bookings"); setProfileOpen(false); }} />
+                        </>
+                      ) : (
+                        <>
+                          <DropdownItem icon={<BookOpen size={18} />} label="Reservations" onClick={() => { navigate("/bookings"); setProfileOpen(false); }} />
+                          <DropdownItem icon={<Heart size={18} />} label="Saved Homes" onClick={() => { navigate("/wishlist"); setProfileOpen(false); }} />
+                          <DropdownItem icon={<Clock3 size={18} />} label="Waitlist" onClick={() => { navigate("/user/waitlists"); setProfileOpen(false); }} />
+                        </>
+                      )}
+                      
+                      <DropdownItem icon={<User2 size={18} />} label="Profile Settings" onClick={() => { navigate("/profile"); setProfileOpen(false); }} />
+                      <div className="h-px bg-slate-50 my-2 mx-2" />
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-rose-500 hover:bg-rose-50 rounded-2xl transition-colors">
+                        <LogOut size={18} /> Log out
+                      </button>
                     </div>
                   </>
                 )}
               </div>
             )}
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setOpen(!open)}
-              className="md:hidden p-2 rounded-xl bg-gray-100 text-gray-700 active:scale-90 transition-transform"
-            >
-              {open ? <X size={22} /> : <Menu size={22} />}
+            <button onClick={() => setOpen(!open)} className="md:hidden p-2.5 rounded-2xl bg-slate-100 text-slate-900">
+              {open ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu Overlay */}
+        {/* MOBILE MENU */}
         {open && (
-          <div className="md:hidden absolute top-full left-4 right-4 mt-2 bg-white rounded-3xl shadow-2xl border border-gray-100 p-6 flex flex-col gap-4 animate-in slide-in-from-top-4 duration-300 z-50">
-            {navLinks.map((link) => (
+          <div className="md:hidden absolute top-full left-0 right-0 mt-2 mx-4 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 space-y-4 animate-in slide-in-from-top-4 duration-300">
+             {navLinks.map((link) => (
               <button 
                 key={link.name}
                 onClick={() => { navigate(link.path); setOpen(false); }}
-                className={`text-left text-lg font-bold px-4 py-2 rounded-xl ${isActive(link.path) ? "bg-blue-50 text-blue-600" : "text-gray-800"}`}
+                className={`w-full text-left p-4 rounded-2xl font-bold flex items-center gap-3 ${isActive(link.path) ? "bg-blue-50 text-blue-600" : "text-slate-700 hover:bg-slate-50"}`}
               >
-                {link.name}
+                {link.icon} {link.name}
               </button>
             ))}
-            
-            <hr className="border-gray-100" />
-            
-            {!isLoggedIn ? (
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => navigate("/auth")} className="py-3 font-bold text-gray-700 bg-gray-100 rounded-2xl">Log in</button>
-                <button onClick={() => navigate("/auth")} className="py-3 font-bold text-white bg-blue-600 rounded-2xl">Sign up</button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <button onClick={() => {navigate("/bookings"); setOpen(false);}} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl font-bold text-gray-700">
-                  <BookOpen size={20} /> My Bookings
-                </button>
-                {/* Mobile Wishlist Button */}
-                <button onClick={() => {navigate("/wishlist"); setOpen(false);}} className="flex items-center gap-3 p-4 bg-rose-50/50 rounded-2xl font-bold text-rose-600">
-                  <Heart size={20} fill="currentColor" /> My Wishlist
-                </button>
-                <button onClick={handleLogout} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl font-bold text-gray-500">
-                  <LogOut size={20} /> Logout
-                </button>
-              </div>
-            )}
+            <div className="h-px bg-slate-100" />
+            <button 
+              onClick={() => { navigate(userRole === "owner" ? "/owner/add-room" : "/list-property"); setOpen(false); }}
+              className="w-full flex items-center gap-3 p-4 bg-slate-900 text-white rounded-2xl font-bold"
+            >
+              {userRole === "owner" ? <PlusCircle size={20} /> : <Home size={20} />}
+              {userRole === "owner" ? "Add New Room" : "List your property"}
+            </button>
           </div>
         )}
       </nav>
@@ -202,9 +233,9 @@ const Navbar = () => {
 const DropdownItem = ({ icon, label, onClick }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"
+    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-2xl transition-all group"
   >
-    {icon}
+    <span className="text-slate-400 group-hover:text-blue-600">{icon}</span>
     {label}
   </button>
 );

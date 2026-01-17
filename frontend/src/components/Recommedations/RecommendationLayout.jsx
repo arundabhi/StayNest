@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../api/axios.config";
 import HotelCard from "./HotelCard";
 
 const RecommendationLayout = ({
@@ -27,7 +27,7 @@ const RecommendationLayout = ({
           headers.Authorization = `Bearer ${token}`;
         }
 
-        const res = await axios.get(
+        const res = await api.get(
           `${import.meta.env.VITE_API_URL}${endpoint}`,
           { headers }
         );
@@ -39,17 +39,13 @@ const RecommendationLayout = ({
          * - offers
          */
         const list =
-          res.data.hotels ||
-          res.data.recommendations ||
-          res.data.offers ||
-          [];
+          res.data.hotels || res.data.recommendations || res.data.offers || [];
 
         const finalData = transform ? list.map(transform) : list;
         setHotels(finalData);
       } catch (err) {
         setError(
-          err.response?.data?.message ||
-            "Failed to load recommendations"
+          err.response?.data?.message || "Failed to load recommendations"
         );
       } finally {
         setLoading(false);

@@ -346,7 +346,7 @@ export const autoPromoteWaitlist = async () => {
         totalGuest: waitlist.totalGuest,
         status: "pending",
         paymentStatus: "pending",
-        paymentMode: "online",
+        paymentMode: "COD",
       });
 
       waitlist.status = "promoted";

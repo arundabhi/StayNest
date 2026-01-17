@@ -13,3 +13,10 @@
 .input {
   @apply w-full border rounded-lg p-3 mb-3 focus:outline-none focus:ring focus:ring-blue-300;
 }
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+.animate-pulse-subtle {
+  animation: subtle-pulse 3s ease-in-out infinite;
+}

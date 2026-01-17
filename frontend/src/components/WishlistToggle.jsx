@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api/axios.config";
 import { Heart } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -11,7 +11,7 @@ const WishlistToggle = ({ hotelId }) => {
   useEffect(() => {
     if (!token) return;
 
-    axios
+    api
       .get(
         `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`,
         {
@@ -32,7 +32,7 @@ const WishlistToggle = ({ hotelId }) => {
     }
 
     try {
-      const res = await axios.post(
+      const res = await api.post(
         `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
         { hotelId }, // ✅ BODY
         {

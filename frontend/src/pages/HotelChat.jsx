@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ChatBox from "../components/ChatBox";
-import { fetchMessages, postMessage, markSeen } from "../api/chat.api";
-import { Send, ChevronLeft, Info, Circle } from "lucide-react";
+import api from "../api/axios.config";
+import { Send, ChevronLeft, Info } from "lucide-react";
 import toast from "react-hot-toast";
 
 const HotelChat = () => {
@@ -12,174 +12,174 @@ const HotelChat = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [hotelInfo, setHotelInfo] = useState(null);
+  const [userId, setUserId] = useState(null);
 
-  const hasMarkedSeen = useRef(false);
-
-  const user = JSON.parse(localStorage.getItem("user"));
-  const userId = user?._id;
+  const bottomRef = useRef(null);
+  const sseRef = useRef(null);
 
   /* ─────────────────────────────
-     1️⃣ LOAD CHAT HISTORY
+     1️⃣ FETCH LOGGED-IN USER
   ───────────────────────────── */
+  const fetchUser = async () => {
+    try {
+      const res = await api.get("/users/me");
+      setUserId(res.data.user._id);
+    } catch {
+      toast.error("Please login again");
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  /* ─────────────────────────────
+     2️⃣ LOAD CHAT HISTORY
+  ───────────────────────────── */
+  const loadChat = async () => {
+    try {
+      const res = await api.get(`/chats/${hotelId}`);
+
+      if (res.data.success) {
+        setMessages(res.data.messages || []);
+        setHotelInfo(res.data.hotel || { name: "Hotel Concierge" });
+
+        // mark seen if hotel messages exist
+        if (res.data.messages.some(m => m.sender === "hotel" && m.status !== "seen")) {
+          await api.patch(`/chats/seen/${hotelId}`);
+        }
+      }
+    } catch {
+      toast.error("Failed to load conversation");
+    }
+  };
+
   useEffect(() => {
     if (!hotelId) return;
-
-    const loadChat = async () => {
-      try {
-        const res = await fetchMessages(hotelId);
-        console.log(res.data);
-        
-        if (res.data.success) {
-          setMessages(res.data.messages);
-          setHotelInfo(res.data.hotel || { name: "Hotel Concierge" });
-        }
-      } catch (err) {
-        toast.error(err.message || "Failed to load conversation");
-      }
-    };
-
     loadChat();
   }, [hotelId]);
 
   /* ─────────────────────────────
-     2️⃣ MARK SEEN (ONCE)
-  ───────────────────────────── */
-  useEffect(() => {
-    if (!hotelId || hasMarkedSeen.current) return;
-
-    const hasUnseenHotelMsg = messages.some(
-      m => m.sender === "hotel" && m.status !== "seen"
-    );
-
-    if (hasUnseenHotelMsg) {
-      markSeen(hotelId);
-      hasMarkedSeen.current = true;
-    }
-  }, [messages, hotelId]);
-
-  /* ─────────────────────────────
-     3️⃣ SSE REAL-TIME CONNECTION
+     3️⃣ SSE CONNECTION
   ───────────────────────────── */
   useEffect(() => {
     if (!userId) return;
 
-    const eventSource = new EventSource(
-      `${import.meta.env.VITE_API_URL}/chats/sse`,
-      { withCredentials: true } // JWT cookie
+    const es = new EventSource(
+      `${import.meta.env.VITE_API_URL}/chats/sse/${userId}`
     );
 
-    eventSource.onmessage = (event) => {
+    es.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       if (data.type === "new-message") {
-      setMessages((prev) => {
-        const exists = prev.some(
-          (m) => m._id === data.chat._id
-        );
-        return exists ? prev : [...prev, data.chat];
-      });
-if (data.chat.sender === "hotel") {
-        markSeen(hotelId);
+        setMessages(prev => {
+          const exists = prev.some(m => m._id === data.chat._id);
+          return exists ? prev : [...prev, data.chat];
+        });
+
+        if (data.chat.sender === "hotel") {
+          api.patch(`/chat/seen/${hotelId}`);
+        }
       }
-    }
 
       if (data.type === "seen") {
-        setMessages(prev =>
-          prev.map(m => ({ ...m, status: "seen" }))
-        );
+        setMessages(prev => prev.map(m => ({ ...m, status: "seen" })));
       }
     };
 
-    eventSource.onerror = () => {
+    es.onerror = () => {
       console.warn("SSE disconnected, retrying...");
-      eventSource.close();
+      sseRef.current = null;
+      setTimeout(() => {
+        if (!sseRef.current) {
+          sseRef.current = es;
+        }
+      }, 3000);
     };
+
+    sseRef.current = es;
 
     return () => {
-      eventSource.close();
+      es.close();
+      sseRef.current = null;
     };
-  }, [userId]);
+  }, [userId, hotelId]);
 
   /* ─────────────────────────────
-     4️⃣ SEND MESSAGE
+     4️⃣ AUTO SCROLL
+  ───────────────────────────── */
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  /* ─────────────────────────────
+     5️⃣ SEND MESSAGE
   ───────────────────────────── */
   const handleSend = async (e) => {
-  e.preventDefault();
-  if (!inputValue.trim()) return;
+    e.preventDefault();
+    if (!inputValue.trim()) return;
 
-  const tempMessage = {
-    _id: `temp-${Date.now()}`,
-    message: inputValue,
-    sender: "user",
-    status: "sent",
-    createdAt: new Date().toISOString(),
+    const messageText = inputValue;
+    setInputValue("");
+
+    try {
+      await api.post(`/chats/${hotelId}`, {
+        message: messageText,
+        sender: "user",
+      });
+    } catch {
+      toast.error("Message failed to send");
+    }
   };
-
-  // 1️⃣ Show instantly
-  setMessages(prev => [...prev, tempMessage]);
-  setInputValue("");
-
-  try {
-    const res = await postMessage(hotelId, {
-      message: tempMessage.message,
-      sender: "user",
-    });
-
-    if (!res.data.success) throw new Error();
-
-  } catch {
-    toast.error("Message failed");
-  }
-};
-
 
   /* ─────────────────────────────
      UI
   ───────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pt-24 pb-10">
-      <div className="max-w-3xl mx-auto px-4 h-[85vh] flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] pt-24 pb-10 flex flex-col items-center">
+      <div className="w-full max-w-2xl h-[80vh] flex flex-col bg-white shadow-2xl rounded-[2.5rem] overflow-hidden border">
 
         {/* HEADER */}
-        <header className="bg-white border border-gray-100 rounded-t-3xl p-5 shadow-sm flex items-center justify-between">
+        <header className="p-6 border-b flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-50 rounded-full">
-              <ChevronLeft size={24} />
+            <button onClick={() => navigate(-1)}>
+              <ChevronLeft />
             </button>
+            <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black">
+              {hotelInfo?.name?.charAt(0) || "H"}
+            </div>
             <div>
               <h2 className="font-black">{hotelInfo?.name || "Hotel Concierge"}</h2>
-              <div className="flex items-center gap-1 text-xs text-gray-400">
-                <Circle size={8} className="fill-emerald-500 text-emerald-500 animate-pulse" />
-                Active
-              </div>
+              <p className="text-xs text-emerald-500 font-bold">Online</p>
             </div>
           </div>
-          <Info size={20} className="text-gray-400" />
+          <Info />
         </header>
 
-        {/* CHAT */}
-        <div className="flex-1 bg-white border-x border-gray-100">
-          <ChatBox messages={messages} hotelName={hotelInfo?.name}/>
+        {/* MESSAGES */}
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+          <ChatBox messages={messages} />
+          <div ref={bottomRef} />
         </div>
 
         {/* INPUT */}
-        <footer className="bg-white border border-gray-100 rounded-b-3xl p-4">
-          <form onSubmit={handleSend} className="flex gap-2">
+        <footer className="p-6 border-t">
+          <form onSubmit={handleSend} className="flex gap-3">
             <input
-              className="flex-1 p-3 rounded-xl border"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Type your message..."
+              className="flex-1 bg-slate-100 px-4 py-2 rounded-xl font-bold"
             />
             <button
               disabled={!inputValue.trim()}
-              className="bg-blue-600 text-white px-5 rounded-xl disabled:opacity-50"
+              className="bg-blue-600 text-white p-3 rounded-xl"
             >
-              <Send size={18} />
+              <Send />
             </button>
           </form>
         </footer>
-
       </div>
     </div>
   );

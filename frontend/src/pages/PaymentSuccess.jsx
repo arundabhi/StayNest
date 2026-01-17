@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios.config";
 
 const PaymentSuccess = () => {
   const [params] = useSearchParams();
@@ -17,7 +17,7 @@ const PaymentSuccess = () => {
 
         // ✅ STRIPE VERIFICATION
         if (session_id) {
-          await axios.get(
+          await api.get(
             `${import.meta.env.VITE_API_URL}/payment/stripe/verify`,
             {
               params: { session_id },
@@ -29,7 +29,7 @@ const PaymentSuccess = () => {
         }
 
         if (bookingId) {
-          await axios.patch(
+          await api.patch(
             `${import.meta.env.VITE_API_URL}/payment/razorpay/confirm/${bookingId}`,
             {},
             {

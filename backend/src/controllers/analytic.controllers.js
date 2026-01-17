@@ -24,7 +24,7 @@ export const getDashboardOverview = async (req, res) => {
     const hotelId = hotel._id;
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+   
 
     const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastMonthStart = new Date(
@@ -57,7 +57,7 @@ export const getDashboardOverview = async (req, res) => {
         hotelId,
         status: "booked",
         checkIn: { $lte: today },
-        checkOut: { $gte: today },
+        checkOut: { $gt: today },
       }),
 
      
@@ -79,7 +79,7 @@ export const getDashboardOverview = async (req, res) => {
         {
           $match: {
             hotelId: new mongoose.Types.ObjectId(hotelId),
-            paymentStatus: "confirm",
+            paymentStatus: "success",
           },
         },
         { $group: { _id: null, total: { $sum: "$totalPrice" } } },
@@ -90,7 +90,7 @@ export const getDashboardOverview = async (req, res) => {
         {
           $match: {
             hotelId: new mongoose.Types.ObjectId(hotelId),
-            paymentStatus: "confirm",
+            paymentStatus: "success",
             createdAt: { $gte: thisMonthStart },
           },
         },
@@ -215,7 +215,7 @@ export const getRevenueChart = async (req, res) => {
       {
         $match: {
           hotelId: new mongoose.Types.ObjectId(hotelId),
-          paymentStatus: "confirm",
+          paymentStatus: "success",
           createdAt: { $gte: twelveMonthsAgo },
         },
       },
@@ -360,7 +360,7 @@ export const getRoomPerformance = async (req, res) => {
             {
               $match: {
                 roomId: new mongoose.Types.ObjectId(room._id),
-                paymentStatus: "confirm",
+                paymentStatus: "success",
               },
             },
             { $group: { _id: null, total: { $sum: "$totalPrice" } } },
@@ -667,7 +667,7 @@ export const getGuestAnalytics = async (req, res) => {
         {
           $match: {
             hotelId: new mongoose.Types.ObjectId(hotel._id),
-            paymentStatus: "confirm",
+            paymentStatus: "success",
           },
         },
         {

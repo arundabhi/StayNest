@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios.config";
 import { Heart, Trash2, MapPin, ArrowRight, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -9,10 +9,11 @@ const WishlistPage = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const token = localStorage.getItem("accessToken");
+  
 
   const fetchWishlist = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/wishlists`, {
+      const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
@@ -36,7 +37,7 @@ const WishlistPage = () => {
 
   const handleRemove = async (wishlistId) => {
     try {
-      const res = await axios.delete(`${import.meta.env.VITE_API_URL}/wishlists/${wishlistId}`, {
+      const res = await api.delete(`${import.meta.env.VITE_API_URL}/wishlists/${wishlistId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {

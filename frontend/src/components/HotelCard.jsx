@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, Star, Heart } from "lucide-react";
-import axios from "axios";
+import api from "../api/axios.config";
 import toast from "react-hot-toast";
 
 const Badge = ({ children, className = "" }) => (
@@ -29,7 +29,7 @@ const HotelCard = ({ hotel }) => {
     if (!token || !hotel._id) return;
     const checkStatus = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotel._id}`, {
+        const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotel._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setIsWishlisted(res.data.wishlisted);
@@ -56,7 +56,7 @@ const HotelCard = ({ hotel }) => {
 
     try {
       setWishLoading(true);
-      const res = await axios.post(
+      const res = await api.post(
         `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
         { hotelId: hotel._id },
         { headers: { Authorization: `Bearer ${token}` } }

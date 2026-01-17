@@ -179,7 +179,7 @@ const Bookings = () => {
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen py-12">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 my-10">
         
         <header className="mb-10">
           <h1 className="text-4xl font-black text-gray-900 tracking-tight">My Bookings</h1>

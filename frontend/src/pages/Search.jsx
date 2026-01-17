@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "../utils/axios";
+import api from "../api/axios.config";
 import { MapPin } from "lucide-react";
 
 const Search = () => {
@@ -20,7 +20,7 @@ const Search = () => {
     const fetchHotels = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("/hotels/search", {
+        const res = await api.get("/hotels/search", {
           params: {
             destination,
             checkIn,

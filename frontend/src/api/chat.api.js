@@ -1,6 +1,6 @@
-import axios from 'axios';
+import api from '../api/axios.config';
 
-const API = axios.create({ baseURL: import.meta.env.VITE_API_URL });
+const API = api.create({ baseURL: import.meta.env.VITE_API_URL });
 
 // Add interceptor to attach token
 API.interceptors.request.use((config) => {

@@ -4,7 +4,7 @@ import { Hotel } from "../models/hotel.models.js";
 const connections = {};
 
 export const sseController = (req, res) => {
-  const { userId } = req.userId;
+  const { userId } = req.params; // ✅ FIXED
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -28,13 +28,14 @@ export const sseController = (req, res) => {
 };
 
 
+
 export const sendMessage = async (req, res) => {
   try {
-    const userId = req.userId;
+    const senderId = req.userId;
     const { hotelId } = req.params;
     const { message, sender } = req.body;
 
-    if (!userId) {
+    if (!senderId) {
       return res.status(401).json({ success: false, message: "Not authorized" });
     }
 
@@ -45,17 +46,28 @@ export const sendMessage = async (req, res) => {
       });
     }
 
+    // 🔥 Find hotel to know owner
+    const hotel = await Hotel.findById(hotelId);
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: "Hotel not found" });
+    }
+
     const chat = await Chat.create({
-      userId,
+      userId: senderId,
       hotelId,
       sender,
       message,
       status: "sent",
     });
 
+    // 🔥 Decide WHO receives the real-time event
+    const receiverId =
+      sender === "user"
+        ? hotel.owner.toString() // send to hotel owner
+        : senderId;              // send to user (when hotel replies)
 
-    if (connections[userId]) {
-      connections[userId].forEach(stream => {
+    if (connections[receiverId]) {
+      connections[receiverId].forEach(stream => {
         stream.write(
           `data: ${JSON.stringify({ type: "new-message", chat })}\n\n`
         );
@@ -78,6 +90,7 @@ export const sendMessage = async (req, res) => {
 };
 
 
+
 export const getChatMessages = async (req, res) => {
   try {
     const userId = req.userId;
@@ -93,12 +106,14 @@ export const getChatMessages = async (req, res) => {
 
     const [messages, totalMessages] = await Promise.all([
       Chat.find({ userId, hotelId })
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: 1 })
         .skip(skip)
-        .limit(limit).populate("Hotel",'name city'),
+        .limit(limit).populate("userId", "name email").populate("hotelId",'name city'),
 
       Chat.countDocuments({ userId, hotelId }),
     ]);
+
+    const hotelInfo = messages.length > 0 ? messages[0].hotelId : null
 
 
 
@@ -109,7 +124,8 @@ export const getChatMessages = async (req, res) => {
         totalPages: Math.ceil(totalMessages / limit),
         totalMessages,
       },
-      messages: messages.reverse(), // oldest → newest
+      hotel:hotelInfo,
+      messages 
     });
 
   } catch (error) {

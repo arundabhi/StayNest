@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios.config";
 import { Link } from "react-router-dom";
 import HotelCard from "./HotelCard";
 import { Sparkles, ArrowRight, Info, RefreshCw } from "lucide-react";
@@ -11,7 +11,7 @@ const FeaturedHotel = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
+      const response = await api.get(
         `${import.meta.env.VITE_API_URL}/recommendations/top-rated`
       );
 

@@ -64,7 +64,9 @@ const bookingSchema = new Schema(
     discountAmount: Number,    
     basePrice: Number,    
     couponApplied: { type: Boolean, default: false },
-    couponCode: String
+    couponCode: String,
+    specialOfferPercent:Number,           
+    specialOfferAmount:Number
 
   },
   { timestamps: true }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../../api/axios.config";
 import { Star, MapPin, Sparkles, ArrowRight, Info, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -19,7 +19,7 @@ const PersonalizedRecommendations = () => {
           return;
         }
 
-        const res = await axios.get(
+        const res = await api.get(
           `${import.meta.env.VITE_API_URL}/recommendations/personalized`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -46,7 +46,7 @@ const PersonalizedRecommendations = () => {
       if (!token || !hotelId) return;
       const checkStatus = async () => {
         try {
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`, {
+          const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setIsWished(res.data.wishlisted);
@@ -63,7 +63,7 @@ const PersonalizedRecommendations = () => {
 
       try {
         setWishLoading(true);
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/wishlists/toggle`, 
+        const res = await api.post(`${import.meta.env.VITE_API_URL}/wishlists/toggle`, 
           { hotelId }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -129,7 +129,7 @@ const PersonalizedRecommendations = () => {
     );
   }
 
-  if (hotels.length === 0) return null;
+  if (hotels?.length === 0) return null;
 
   return (
     <section className="max-w-7xl mx-auto px-6 py-16">
@@ -148,7 +148,7 @@ const PersonalizedRecommendations = () => {
 
       {/* GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {hotels.map((hotel) => (
+        {hotels?.map((hotel) => (
           <div
             key={hotel._id}
             onClick={() => navigate(`/hotels/${hotel._id}`)}

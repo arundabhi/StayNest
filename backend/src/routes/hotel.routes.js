@@ -37,7 +37,7 @@ hotelRouter.post(
 
 
 hotelRouter.get(
-  "/my/hotels",
+  "/my/hotel",
   protect,
   authorizeRoles("owner", "admin"),
   getMyHotel
@@ -45,7 +45,7 @@ hotelRouter.get(
 
 
 hotelRouter.patch(
-  "/:hotelId",
+  "/update",
   protect,
   authorizeRoles("owner", "admin"),
   upload.array("images", 5),

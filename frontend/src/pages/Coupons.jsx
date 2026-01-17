@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios.config";
 import CouponCard from "../components/CouponCard";
 import { Ticket, Filter, Sparkles, Info } from "lucide-react";
 
@@ -14,7 +14,7 @@ const Coupons = () => {
   useEffect(() => {
     const fetchCoupons = async () => {
       try {
-        const res = await axios.get(
+        const res = await api.get(
           `${import.meta.env.VITE_API_URL}/coupons/available?amount=0`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -82,7 +82,7 @@ const Coupons = () => {
               <div className="inline-flex items-center gap-2 bg-blue-500/30 text-blue-50 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6 backdrop-blur-md">
                 <Sparkles size={14} /> Exclusive Rewards
               </div>
-              <h1 className="text-4xl md:text-6xl font-black text-white leading-tight tracking-tighter mb-4">
+              <h1 className="text-3xl md:text-5xl font-semibold text-white leading-tight tracking-tighter mb-4">
                 Smart Savings,<br />Better Stays.
               </h1>
               <p className="text-blue-100 font-medium text-lg max-w-md opacity-90 leading-relaxed">

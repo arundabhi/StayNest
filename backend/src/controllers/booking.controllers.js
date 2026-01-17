@@ -8,6 +8,7 @@ import { calculateFinalPrice } from "../utils/calculateFinalPrice.js";
 import { Coupon } from "../models/coupone.models.js";
 import { calculateCouponDiscount } from "../utils/coupon.js";
 import { Payment } from "../models/payment.models.js";
+import { getSpecialOffers } from "./recommendation.controllers.js";
 
 export const createBooking = async (req, res) => {
   const session = await mongoose.startSession();
@@ -20,6 +21,7 @@ export const createBooking = async (req, res) => {
       checkOut,
       totalGuest,
       paymentMode,
+      useSpecialOffer,
       couponCode: couponCodeFromClient,
     } = req.body;
 
@@ -51,13 +53,15 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    /* ---------------- DATE VALIDATION ---------------- */
+
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const start = new Date(checkIn);
     const end = new Date(checkOut);
+    let specialOfferPercent = 0;
+    let specialOfferAmount = 0;
 
     if (start < today) {
       await session.abortTransaction();
@@ -74,6 +78,7 @@ export const createBooking = async (req, res) => {
         message: "Check-out must be after check-in",
       });
     }
+   
 
     const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
@@ -85,7 +90,6 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    /* ---------------- ROOM VALIDATION ---------------- */
 
     const room = await Room.findById(roomId)
       .session(session)
@@ -145,7 +149,7 @@ export const createBooking = async (req, res) => {
         ? overlappingBookings / room.totalRooms
         : 0;
 
-    /* ---------------- DYNAMIC PRICING ---------------- */
+    
 
     const dynamicPricing = await calculateDynamicPrice({
       basePrice: room.pricePerDay,
@@ -160,69 +164,102 @@ export const createBooking = async (req, res) => {
     /* ---------------- BASE PRICE ---------------- */
 
     const pricing = calculateFinalPrice({
-      pricePerDay,
-      nights,
+  pricePerDay,
+  nights,
+});
+
+/*
+pricing = {
+  subtotal,
+  gstAmount,
+  serviceFee,
+  totalPrice
+}
+*/
+
+let baseSubtotal = pricing.subtotal;
+
+/* ---------------- PRICE ENGINE (SINGLE SOURCE OF TRUTH) ---------------- */
+let couponApplied = false;
+let couponCode = null;
+let subtotal = pricing.subtotal;
+
+/* --- SPECIAL OFFER (FIRST) --- */
+const offer = await getSpecialOfferForHotel(hotelId);
+
+if (offer) {
+  specialOfferPercent = offer.discountPercent;
+  specialOfferAmount = Math.round(
+    (subtotal * specialOfferPercent) / 100
+  );
+  subtotal -= specialOfferAmount;
+}
+
+/* --- COUPON (SECOND) --- */
+let couponDiscount = 0;
+
+if (couponCodeFromClient) {
+  const coupon = await Coupon.findOne({
+    code: couponCodeFromClient,
+    isActive: true,
+  }).session(session);
+
+  if (!coupon) {
+    await session.abortTransaction();
+    return res.status(400).json({
+      success: false,
+      message: "Invalid or expired coupon",
     });
+  }
 
-    const baseTotal = pricing.totalPrice;
 
-    /* ---------------- COUPON VALIDATION ---------------- */
+  couponDiscount = calculateCouponDiscount(coupon, subtotal);
+  subtotal -= couponDiscount;
+  couponApplied = couponDiscount > 0;
+  couponCode = coupon.code;
+}
 
-    let discountAmount = 0;
-    let couponApplied = false;
-    let couponCode = null;
+/* --- TAX & FEES (LAST) --- */
+const gstAmount = Math.round(subtotal * 0.12);
+const serviceFee = pricing.serviceFee;
 
-    if (couponCodeFromClient) {
-      const coupon = await Coupon.findOne({
-        code: couponCodeFromClient,
-        isActive: true,
-      }).session(session);
+const finalTotal = subtotal + gstAmount + serviceFee;
 
-      if (!coupon) {
-        await session.abortTransaction();
-        return res.status(400).json({
-          success: false,
-          message: "Invalid or expired coupon",
-        });
-      }
-
-      discountAmount = calculateCouponDiscount(coupon, baseTotal);
-      couponApplied = discountAmount > 0;
-      couponCode = coupon.code;
-    }
-
-    /* ---------------- FINAL PRICE ---------------- */
-
-    const finalTotal = Math.max(baseTotal - discountAmount, 0);
-
-    /* ---------------- CREATE BOOKING ---------------- */
+const discountAmount = specialOfferAmount + couponDiscount;
 
     const booking = await Booking.create(
-      [
-        {
-          userId,
-          hotelId,
-          roomId,
-          checkIn: start,
-          checkOut: end,
-          totalGuest,
-          paymentMode,
+  [
+    {
+      userId,
+      hotelId,
+      roomId,
+      checkIn: start,
+      checkOut: end,
+      totalGuest,
+      paymentMode,
 
-          pricePerNight: pricePerDay,
-          basePrice: baseTotal,
-          discountAmount,
-          totalPrice: finalTotal,
+      pricePerNight: pricePerDay,
 
-          couponCode,
-          couponApplied,
+      basePrice: pricing.subtotal + discountAmount, // original price
+      discountAmount,
 
-          pricingBreakdown: dynamicPricing.breakdown,
-          status: "pending",
-          paymentStatus: "pending",
-        },
-      ],
-      { session }
-    );
+      specialOfferPercent,
+      specialOfferAmount,
+
+      couponCode,
+      couponApplied,
+
+      
+      totalPrice: finalTotal,
+
+      pricingBreakdown: dynamicPricing.breakdown,
+      status: "pending",
+      paymentStatus: "pending",
+    },
+  ],
+  { session }
+);
+
 
     await session.commitTransaction();
 
@@ -250,7 +287,7 @@ export const createBooking = async (req, res) => {
 export const previewBookingPrice = async (req, res) => {
   try {
     const { hotelId, roomId } = req.params;
-    const { checkIn, checkOut, totalGuest } = req.query;
+    const { checkIn, checkOut, totalGuest, couponCode } = req.query;
 
     if (!checkIn || !checkOut || !totalGuest) {
       return res.status(400).json({
@@ -262,10 +299,7 @@ export const previewBookingPrice = async (req, res) => {
     const start = new Date(checkIn);
     const end = new Date(checkOut);
 
-    const nights = Math.ceil(
-      (end - start) / (1000 * 60 * 60 * 24)
-    );
-
+    const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     if (nights <= 0) {
       return res.status(400).json({
         success: false,
@@ -283,8 +317,6 @@ export const previewBookingPrice = async (req, res) => {
       });
     }
 
-    /* ---------------- OCCUPANCY ---------------- */
-
     const overlappingBookings = await Booking.countDocuments({
       roomId,
       status: { $in: ["pending", "booked"] },
@@ -293,29 +325,68 @@ export const previewBookingPrice = async (req, res) => {
     });
 
     const occupancyRate =
-      room.totalRooms > 0
-        ? overlappingBookings / room.totalRooms
-        : 0;
+      room.totalRooms > 0 ? overlappingBookings / room.totalRooms : 0;
 
-    /* ---------------- DYNAMIC PRICING ---------------- */
-
+    /* -------- DYNAMIC PRICE -------- */
     const dynamicPricing = await calculateDynamicPrice({
-  basePrice: room.pricePerDay,
-  checkIn: start,
-  checkOut: end,
-  hotelId,
-  occupancyRate,
-});
+      basePrice: room.pricePerDay,
+      checkIn: start,
+      checkOut: end,
+      hotelId,
+      occupancyRate,
+    });
 
-const pricing = calculateFinalPrice({
-  pricePerDay: dynamicPricing.pricePerDay,
-  nights,
-});
+    const pricing = calculateFinalPrice({
+      pricePerDay: dynamicPricing.pricePerDay,
+      nights,
+    });
 
+    /* -------- PRICE ENGINE (SAME AS CREATE BOOKING) -------- */
+    let subtotal = pricing.subtotal;
+
+    let specialOfferPercent = 0;
+    let specialOfferAmount = 0;
+    let couponDiscount = 0;
+
+    /* 1️⃣ SPECIAL OFFER FIRST */
+    const offer = await getSpecialOfferForHotel(hotelId);
+    if (offer) {
+      specialOfferPercent = offer.discountPercent;
+      specialOfferAmount = Math.round(
+        (subtotal * specialOfferPercent) / 100
+      );
+      subtotal -= specialOfferAmount;
+    }
+
+    /* 2️⃣ COUPON SECOND */
+    if (couponCode) {
+      const coupon = await Coupon.findOne({
+        code: couponCode,
+        isActive: true,
+      });
+
+      if (coupon) {
+        couponDiscount = calculateCouponDiscount(coupon, subtotal);
+        subtotal -= couponDiscount;
+      }
+    }
+
+    /* 3️⃣ TAX & FEES LAST */
+    const gstAmount = Math.round(subtotal * 0.12);
+    const totalPrice = subtotal + gstAmount + pricing.serviceFee;
 
     return res.status(200).json({
       success: true,
-      pricing,
+      pricing: {
+        ...pricing,
+        subtotal,
+        gstAmount,
+        totalPrice,
+        specialOfferPercent,
+        specialOfferAmount,
+        couponDiscount,
+        couponCode: couponDiscount > 0 ? couponCode : null,
+      },
     });
 
   } catch (error) {
@@ -326,6 +397,8 @@ const pricing = calculateFinalPrice({
     });
   }
 };
+
+
 
 
 
@@ -505,7 +578,7 @@ export const cancelBooking = async (req, res) => {
     }
 
     booking.status = "canceled";
-    booking.paymentStatus = "canceled";
+    booking.paymentStatus = "success";
     await booking.save();
     await autoPromoteWaitlist();
 
@@ -1024,29 +1097,7 @@ export const getUpcomingBooking = async (req, res) => {
 // };
 
 
-export const autoCompleteBooking = async () => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
-    const result = await Booking.updateMany(
-      {
-        status: "booked",
-        checkOut: { $lt: today }
-      },
-      {
-        $set: { status: "completed" }
-      }
-    );
-    if (result.modifiedCount > 0) {
-    await autoPromoteWaitlist();
-  }
-
-    console.log(`Auto-completed ${result.modifiedCount} bookings`);
-  } catch (error) {
-    console.error("Auto complete booking error:", error);
-  }
-};
 
 
 export const verifyPayment = async (req, res) => {
@@ -1115,3 +1166,77 @@ export const deleteBooking = async (req,res) => {
     });
   }
 }
+
+
+export const getSpecialOfferForHotel = async (hotelId) => {
+  const rooms = await Room.find({ hotelId });
+
+  if (!rooms.length) return null;
+
+  let totalCapacity = 0;
+  let bookedRooms = 0;
+
+  for (const room of rooms) {
+    totalCapacity += room.totalRooms;
+
+    const booked = await Booking.countDocuments({
+      roomId: room._id,
+      status: "booked",
+      checkIn: { $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    });
+
+    bookedRooms += booked;
+  }
+
+  const occupancyRate =
+    totalCapacity > 0 ? bookedRooms / totalCapacity : 0;
+
+  let discountPercent = 0;
+
+  if (occupancyRate < 0.3) discountPercent = 30;
+  else if (occupancyRate < 0.5) discountPercent = 20;
+  else if (occupancyRate < 0.7) discountPercent = 10;
+
+  if (discountPercent === 0) return null;
+
+  return { discountPercent };
+};
+
+
+export const autoCompleteBooking = async () => {
+  try {
+    const now = new Date();
+
+   
+    now.setSeconds(0, 0);
+
+    const bookingsToComplete = await Booking.find({
+      status: "booked",
+      checkOut: { $lt: now },
+      paymentStatus: { $in: ["paid", "cod"] }, // allow COD bookings too
+    });
+
+    if (bookingsToComplete.length === 0) {
+      console.log("ℹ️ No bookings to auto-complete");
+      return;
+    }
+
+    const bookingIds = bookingsToComplete.map((b) => b._id);
+
+    const result = await Booking.updateMany(
+      { _id: { $in: bookingIds } },
+      {
+        $set: {
+          status: "completed",
+          completedAt: new Date(),
+        },
+      }
+    );
+
+    console.log(
+      `✅ Auto-completed ${result.modifiedCount} booking(s)`
+    );
+  } catch (error) {
+    console.error("❌ Auto-complete booking error:", error);
+  }
+};

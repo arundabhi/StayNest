@@ -107,17 +107,21 @@ export const updateHotel = async (req, res) => {
       description,
     } = req.body;
 
-  
+    let amenities = req.body.amenities;
+
+    if (amenities && !Array.isArray(amenities)) {
+      amenities = [amenities];
+    }
+
     if (
-      !name &&
-      !address &&
-      !city &&
-      !state &&
-      !mobileNumber &&
-      !basePrice &&
-      !description &&
-      !req.body.amenities &&
-      (!req.files || req.files.length === 0)
+      name === undefined &&
+      address === undefined &&
+      city === undefined &&
+      state === undefined &&
+      mobileNumber === undefined &&
+      basePrice === undefined &&
+      description === undefined &&
+      (!amenities || amenities.length === 0)
     ) {
       return res.status(400).json({
         success: false,
@@ -125,33 +129,21 @@ export const updateHotel = async (req, res) => {
       });
     }
 
-
-    let amenities = req.body.amenities;
-    if (!amenities) {
-      amenities = undefined;
-    } else if (!Array.isArray(amenities)) {
-      amenities = [amenities];
-    }
-
-
-
-
-
     const updateData = {
-      ...(name && { name }),
-      ...(address && { address }),
-      ...(city && { city }),
-      ...(state && { state }),
-      ...(mobileNumber && { mobileNumber }),
-      ...(basePrice && { basePrice }),
-      ...(description && { description }),
-      ...(amenities && { amenities })
+      ...(name !== undefined && { name }),
+      ...(address !== undefined && { address }),
+      ...(city !== undefined && { city }),
+      ...(state !== undefined && { state }),
+      ...(mobileNumber !== undefined && { mobileNumber }),
+      ...(basePrice !== undefined && { basePrice }),
+      ...(description !== undefined && { description }),
+      ...(Array.isArray(amenities) && amenities.length > 0 && { amenities }),
     };
 
     const hotel = await Hotel.findOneAndUpdate(
-      { owner: req.userId }, 
+      { owner: req.userId },
       updateData,
-      { new: true,runValidators: true  }
+      { new: true, runValidators: true }
     );
 
     if (!hotel) {
@@ -166,7 +158,6 @@ export const updateHotel = async (req, res) => {
       message: "Hotel updated successfully",
       hotel,
     });
-
   } catch (error) {
     console.error("Update hotel error:", error);
     return res.status(500).json({
@@ -175,6 +166,7 @@ export const updateHotel = async (req, res) => {
     });
   }
 };
+
 
 export const deleteHotel = async (req, res) => {
   try {
@@ -353,13 +345,7 @@ export const getMyHotel = async (req, res) => {
 
 export const toggleHotelState = async (req, res) => {
   try {
-  
-    const hotel = await Hotel.findOneAndUpdate(
-  { owner: req.userId },
-  [{ $set: { isActive: { $not: "$isActive" } } }],
-  { new: true }
-);
-
+    const hotel = await Hotel.findOne({ owner: req.userId });
 
     if (!hotel) {
       return res.status(404).json({
@@ -368,12 +354,14 @@ export const toggleHotelState = async (req, res) => {
       });
     }
 
+    hotel.isActive = !hotel.isActive;
+    await hotel.save();
+
     return res.status(200).json({
       success: true,
       message: `Hotel is now ${hotel.isActive ? "active" : "inactive"}`,
       hotel,
     });
-
   } catch (error) {
     console.error("Toggle hotel state error:", error);
     return res.status(500).json({
@@ -382,6 +370,7 @@ export const toggleHotelState = async (req, res) => {
     });
   }
 };
+
 
 
 export const getAllHotels = async (req, res) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios.config";
 import RecommendationLayout from "../components/Recommedations/RecommendationLayout";
 import toast from "react-hot-toast";
 
@@ -29,6 +29,7 @@ const HotelDetails = () => {
   const [offer, setOffer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
+  
 
   const amenityIcons = {
     wifi: <Wifi size={20} />,
@@ -53,7 +54,7 @@ const HotelDetails = () => {
       if (!token) return;
       const checkStatus = async () => {
         try {
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`, {
+          const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`, {
             headers: { Authorization: `Bearer ${token}` },
             params: { roomId } 
           });
@@ -68,14 +69,14 @@ const HotelDetails = () => {
       if (!token) return toast.error("Please login to save suites");
       try {
         setToggleLoading(true);
-        const res = await axios.post(`${import.meta.env.VITE_API_URL}/wishlists/toggle`, 
+        const res = await api.post(`${import.meta.env.VITE_API_URL}/wishlists/toggle`, 
           { hotelId, roomId }, 
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setIsWished(res.data.wished);
         toast.success(res.data.message);
       } catch (error) {
-        toast.error("Wishlist update failed");
+        toast.error(error.message || "Wishlist update failed");
       } finally {
         setToggleLoading(false);
       }
@@ -108,7 +109,7 @@ const HotelDetails = () => {
   const handleCheckAvailability = async () => {
     if (!checkIn || !checkOut) return toast.error("Select dates in the search bar first!");
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/availability/hotel/${hotelId}/calendar`, {
+      const res = await api.get(`${import.meta.env.VITE_API_URL}/availability/hotel/${hotelId}/calendar`, {
         params: { checkIn, checkOut, guests },
       });
       const isAvailable = res.data.calendar?.every((day) => day.availableRooms > 0);
@@ -118,7 +119,9 @@ const HotelDetails = () => {
       } else {
         toast.error("Sold out for these dates.");
       }
-    } catch (error) { toast.error("Check failed"); }
+    } catch (error) {
+      
+      toast.error(error.message ||"Check failed"); }
   };
 
   /* ------------------- DATA FETCHING ------------------- */
@@ -127,17 +130,17 @@ const HotelDetails = () => {
     const loadData = async () => {
       try {
         const [hotelRes, roomRes, reviewRes, offerRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/hotels/${hotelId}`),
-          axios.get(`${import.meta.env.VITE_API_URL}/rooms/hotel/${hotelId}`),
-          axios.get(`${import.meta.env.VITE_API_URL}/reviews/hotel/${hotelId}`),
-          axios.get(`${import.meta.env.VITE_API_URL}/recommendations/offer/${hotelId}`).catch(() => ({ data: { success: false } }))
+          api.get(`${import.meta.env.VITE_API_URL}/hotels/${hotelId}`),
+          api.get(`${import.meta.env.VITE_API_URL}/rooms/hotel/${hotelId}`),
+          api.get(`${import.meta.env.VITE_API_URL}/reviews/hotel/${hotelId}`),
+          api.get(`${import.meta.env.VITE_API_URL}/recommendations/offer/${hotelId}`).catch(() => ({ data: { success: false } }))
         ]);
         if (hotelRes.data.success) setHotelData(hotelRes.data.hotel);
         if (roomRes.data.success) setRooms(roomRes.data.rooms);
         if (reviewRes.data.success) setReviews(reviewRes.data.reviews);
         if (offerRes.data.success) setOffer(offerRes.data.offer);
       } catch (err) {
-        toast.error("Failed to load property details");
+        toast.error(err.message || "Failed to load property details");
       } finally {
         setLoading(false);
       }
@@ -186,7 +189,7 @@ const HotelDetails = () => {
             <button 
               onClick={async () => {
                 if(!token) return toast.error("Login to save");
-                const res = await axios.post(`${import.meta.env.VITE_API_URL}/wishlists/toggle`, { hotelId }, { headers: { Authorization: `Bearer ${token}` } });
+                const res = await api.post(`${import.meta.env.VITE_API_URL}/wishlists/toggle`, { hotelId }, { headers: { Authorization: `Bearer ${token}` } });
                 toast.success(res.data.message);
               }}
               className="flex items-center gap-2 rounded-2xl border border-gray-900 bg-gray-900 text-white px-6 py-2.5 font-bold transition hover:bg-indigo-600 shadow-xl active:scale-95"
@@ -229,8 +232,16 @@ const HotelDetails = () => {
                   <div>
                     <h3 className="text-2xl font-black text-rose-900 leading-tight">Price Drop: Save {offer.discountPercent}%</h3>
                     <p className="mt-2 text-rose-700 font-medium text-lg">
-                      Secure your stay for <span className="font-black text-rose-600">₹{offer.offerPrice}</span> per night.
-                    </p>
+  Save up to{" "}
+  <span className="font-black text-rose-600">
+    {offer.discountPercent}%
+  </span>{" "}
+  on select dates.
+</p>
+<p className="text-xs text-rose-500 mt-1">
+  Final price depends on availability and stay dates.
+</p>
+
                     <div className="mt-4 inline-block rounded-full bg-rose-100 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-rose-600">
                       Offer expires soon
                     </div>
@@ -269,7 +280,6 @@ const HotelDetails = () => {
               </div>
               
               {rooms.map((room) => {
-                const discountedPrice = offer ? Math.round(room.pricePerDay * (1 - offer.discountPercent / 100)) : room.pricePerDay;
                 return (
                   <div key={room._id} className="group relative flex flex-col overflow-hidden rounded-[2rem] border border-gray-100 bg-white transition-all hover:shadow-2xl hover:shadow-indigo-100/50 md:flex-row">
                     <div className="relative md:w-2/5 overflow-hidden">
@@ -297,12 +307,20 @@ const HotelDetails = () => {
                         <div>
                           <p className="text-[10px] font-black text-gray-300 uppercase tracking-tighter mb-1">Standard Rate</p>
                           <div className="flex items-center gap-3">
-                            <span className="text-3xl font-black text-gray-900">₹{discountedPrice}</span>
-                            {offer && <span className="text-sm text-rose-400 line-through font-bold">₹{room.pricePerDay}</span>}
+                            <span className="text-3xl font-black text-gray-900">
+  ₹{room.pricePerDay}
+</span>
+
+{offer && (
+  <span className="ml-2 text-xs font-bold text-rose-500 uppercase">
+    Up to {offer.discountPercent}% off
+  </span>
+)}
+
                           </div>
                         </div>
                         <button 
-                          onClick={() => navigate(`/bookings/${hotelId}/${room._id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}${offer ? `&offer=${offer.discountPercent}` : ""}`)}
+                          onClick={() => navigate(`/bookings/${hotelId}/${room._id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`)}
                           className="rounded-2xl bg-indigo-600 px-8 py-4 text-sm font-black text-white transition hover:bg-indigo-700 shadow-xl shadow-indigo-100 active:scale-95"
                         >
                           Reserve Suite

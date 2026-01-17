@@ -4,10 +4,6 @@ import { autoPromoteWaitlist, expireWaitlistEntries } from "../controllers/waitl
 
 
 
-cron.schedule("*/15 * * * *", async () => { 
-  console.log("🔄 Running auto-cancel pending bookings...");
-  await autoCancelledPendingBooking();
-});
 
 
 cron.schedule("*/15 * * * *", async () => {
@@ -30,4 +26,13 @@ cron.schedule("*/5 * * * *", async () => {
 cron.schedule("0 * * * *", async () => {
   console.log("⏳ Running waitlist expiry job...");
   await expireWaitlistEntries();
+});
+
+cron.schedule("0 * * * *", async () => {
+  try {
+    console.log("✅ Running auto-complete bookings...");
+    await autoCompleteBooking();
+  } catch (error) {
+    console.error("❌ Auto-complete cron error:", error);
+  }
 });

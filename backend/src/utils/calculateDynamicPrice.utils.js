@@ -1,65 +1,108 @@
 import { Pricing } from "../models/pricing.models.js";
 
+
 export const calculateDynamicPrice = async ({
   basePrice,
   checkIn,
   checkOut,
   hotelId,
-  occupancyRate
+  occupancyRate,
 }) => {
   try {
     const startDate = new Date(checkIn);
     const endDate = new Date(checkOut);
+
+    /* ---------------- SEASON MULTIPLIER ---------------- */
 
     let seasonMultiplier = 1;
 
     const pricingRule = await Pricing.findOne({
       hotelId,
       startDate: { $lte: endDate },
-      endDate: { $gte: startDate }
+      endDate: { $gte: startDate },
     }).sort({ multiplier: -1 });
 
-    if (pricingRule) seasonMultiplier = pricingRule.multiplier;
+    if (pricingRule) {
+      seasonMultiplier = pricingRule.multiplier;
+    }
+
+    /* ---------------- OCCUPANCY MULTIPLIER (SMOOTH) ---------------- */
 
     const occupancyMultiplier =
-      occupancyRate >= 0.9 ? 1.5 :
-      occupancyRate >= 0.7 ? 1.2 : 1;
+      occupancyRate >= 0.95 ? 1.4 :
+      occupancyRate >= 0.85 ? 1.25 :
+      occupancyRate >= 0.7  ? 1.1  :
+      1;
+
+    /* ---------------- WEEKEND MULTIPLIER (PROPORTIONAL) ---------------- */
+
+    const { weekendDays, totalDays } = countWeekendDays(startDate, endDate);
 
     const weekendMultiplier =
-      checkIfRangeHasWeekend(startDate, endDate) ? 1.2 : 1;
+      weekendDays > 0
+        ? 1 + (0.2 * (weekendDays / totalDays))
+        : 1;
+
+    /* ---------------- FINAL MULTIPLIER ---------------- */
 
     let finalMultiplier =
-      seasonMultiplier * occupancyMultiplier * weekendMultiplier;
+      seasonMultiplier *
+      occupancyMultiplier *
+      weekendMultiplier;
 
+    // 🔒 Hard safety cap (business rule)
     finalMultiplier = Math.min(finalMultiplier, 2.5);
 
+    const pricePerDay = Math.round(basePrice * finalMultiplier);
+
     return {
-      pricePerDay: Math.round(basePrice * finalMultiplier),
+      pricePerDay,
       breakdown: {
+        basePrice,
         seasonMultiplier,
         occupancyMultiplier,
         weekendMultiplier,
-        finalMultiplier
-      }
+        weekendDays,
+        totalDays,
+        finalMultiplier,
+        capped: finalMultiplier === 2.5,
+      },
     };
-  } catch (err) {
-    console.error("Dynamic pricing error:", err);
+  } catch (error) {
+    console.error("Dynamic pricing error:", error);
+
+    // 🚨 Safe fallback
     return {
       pricePerDay: basePrice,
-      breakdown: null
+      breakdown: {
+        basePrice,
+        fallback: true,
+        reason: "dynamic_pricing_error",
+      },
     };
   }
 };
 
-const checkIfRangeHasWeekend = (startDate, endDate) => {
-  const date = new Date(startDate);
+/* ------------------------------------------------------------------ */
+/* ---------------- HELPER: COUNT WEEKEND DAYS ----------------------- */
+/* ------------------------------------------------------------------ */
 
-  while (date <= endDate) {
+const countWeekendDays = (startDate, endDate) => {
+  let weekendDays = 0;
+  let totalDays = 0;
+
+  const date = new Date(startDate); // clone to avoid mutation
+
+  while (date < endDate) {
     const day = date.getDay(); // 0 = Sunday, 6 = Saturday
-    if (day === 0 || day === 6) return true;
+    totalDays++;
+
+    if (day === 0 || day === 6) {
+      weekendDays++;
+    }
+
     date.setDate(date.getDate() + 1);
   }
 
-  return false;
+  return { weekendDays, totalDays };
 };
-

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios.config";
 import { MapPin, Star, Heart, ArrowRight, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -13,7 +13,7 @@ const Hotels = () => {
   useEffect(() => {
     const fetchHotels = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/hotels`);
+        const res = await api.get(`${import.meta.env.VITE_API_URL}/hotels`);
         if (res.data.success) {
           setHotels(res.data.hotels);
         }
@@ -38,7 +38,7 @@ const Hotels = () => {
       const checkStatus = async () => {
         try {
           // Matches your route: /is-wishlisted/:hotelId
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`, {
+          const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           setIsWished(res.data.wishlisted);
@@ -59,7 +59,7 @@ const Hotels = () => {
       try {
         setActionLoading(true);
         // UPDATED: Sending hotelId in req.body as per your backend change
-        const res = await axios.post(
+        const res = await api.post(
           `${import.meta.env.VITE_API_URL}/wishlists/toggle`, 
           { hotelId }, // This goes to req.body
           { headers: { Authorization: `Bearer ${token}` } }
