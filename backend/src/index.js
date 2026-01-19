@@ -7,7 +7,7 @@ import cookieParser from "cookie-parser";
 
 
 import connectDb from "./db/index.js";
-import "./cron/booking.cron.js";
+import "./api/cron/booking.cron.js";
 
 import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/admin.routes.js";

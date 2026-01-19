@@ -1,15 +1,27 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "index.js"
+      "dest": "/index.js"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/auto-cancel",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/waitlist-promote",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/waitlist-expire",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/auto-complete",
+      "schedule": "0 * * * *"
     }
   ]
 }
