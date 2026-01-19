@@ -161,7 +161,7 @@ export const getAllHotelsAdmin = async (req, res) => {
 
 export const getRegisteredHotels = async (req, res) => {
   try {
-    const hotels = await Hotel.find({ isApproved: false });
+    const hotels = await Hotel.find({ isApproved: false }).populate('owner','email name mobileNumber');
 
     return res.status(200).json({
       success: true,
@@ -180,3 +180,47 @@ export const getRegisteredHotels = async (req, res) => {
     });
   }
 };
+
+export const deleteOwner = async (req, res) => {
+  try {
+    const { ownerId } = req.params;
+
+    // 1. Find user
+    const owner = await User.findById(ownerId);
+
+    if (!owner) {
+      return res.status(404).json({
+        success: false,
+        message: "Owner not found",
+      });
+    }
+
+    // 2. Prevent deleting admin or normal user
+    if (owner.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "Only owners can be deleted",
+      });
+    }
+
+    // 3. Delete / Disable owner's hotels
+    await Hotel.deleteMany({ owner: ownerId });
+
+    // 4. Delete owner account
+    await User.findByIdAndDelete(ownerId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Owner and related hotels deleted successfully",
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+

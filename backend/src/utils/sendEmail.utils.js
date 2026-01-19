@@ -2,17 +2,20 @@
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp-relay.brevo.com',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+  secure:false
 });
+
+export default transporter
 
 export const sendEmail = async ({ to, subject, html }) => {
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.SENDER_EMAIL,
       to,
       subject,
       html
@@ -24,7 +27,7 @@ export const sendEmail = async ({ to, subject, html }) => {
   }
 };
 
-// Email templates
+
 export const emailTemplates = {
   welcome: (name) => `
     <h1>Welcome ${name}!</h1>

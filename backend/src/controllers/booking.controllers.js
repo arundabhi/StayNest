@@ -9,6 +9,7 @@ import { Coupon } from "../models/coupone.models.js";
 import { calculateCouponDiscount } from "../utils/coupon.js";
 import { Payment } from "../models/payment.models.js";
 import { getSpecialOffers } from "./recommendation.controllers.js";
+import transporter from "../utils/sendEmail.utils.js";
 
 export const createBooking = async (req, res) => {
   const session = await mongoose.startSession();
@@ -260,6 +261,94 @@ const discountAmount = specialOfferAmount + couponDiscount;
   { session }
 );
 
+const bookingDoc = await Booking.findById(booking[0]._id)
+  .populate("hotelId", "name city")
+  .populate("roomId", "title").session(session);;
+
+
+
+const mailOptions = {
+  from: `"Hotel Booking" <${process.env.SENDER_EMAIL}>`,
+  to: req.user.email,
+  subject: "✅ Booking Confirmed | Your Stay Details",
+  html: `
+  <div style="font-family: Arial, Helvetica, sans-serif; background:#f4f6f8; padding:30px;">
+    <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+
+      <!-- Header -->
+      <div style="background:#0d6efd; padding:20px; text-align:center; color:#ffffff;">
+        <h1 style="margin:0;">🏨 Booking Confirmed</h1>
+        <p style="margin:5px 0 0;">We look forward to hosting you</p>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:25px; color:#333;">
+        <p>Hi <strong>${req.user.name}</strong>,</p>
+
+        <p>Thank you for your booking! Your reservation has been successfully created. Below are your booking details:</p>
+
+        <table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse; margin-top:15px;">
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Booking ID</strong></td>
+            <td style="border-bottom:1px solid #eee;">${bookingDoc?._id}</td>
+          </tr>
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Hotel</strong></td>
+            <td style="border-bottom:1px solid #eee;">${bookingDoc?.hotelId.name}</td>
+          </tr>
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Room Type</strong></td>
+            <td style="border-bottom:1px solid #eee;">${bookingDoc?.roomId.title}</td>
+          </tr>
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Location</strong></td>
+            <td style="border-bottom:1px solid #eee;">${bookingDoc?.hotelId.city}</td>
+          </tr>
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Check-in</strong></td>
+            <td style="border-bottom:1px solid #eee;">${start.toDateString()}</td>
+          </tr>
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Check-out</strong></td>
+            <td style="border-bottom:1px solid #eee;">${end.toDateString()}</td>
+          </tr>
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Guests</strong></td>
+            <td style="border-bottom:1px solid #eee;">${totalGuest}</td>
+          </tr>
+          <tr>
+            <td style="border-bottom:1px solid #eee;"><strong>Payment Mode</strong></td>
+            <td style="border-bottom:1px solid #eee;">${paymentMode}</td>
+          </tr>
+          <tr>
+            <td style="font-size:16px;"><strong>Total Amount</strong></td>
+            <td style="font-size:16px; color:#0d6efd;"><strong>₹${finalTotal}</strong></td>
+          </tr>
+        </table>
+
+        <p style="margin-top:20px;">
+          If you need to modify or cancel your booking, please contact our support team.
+        </p>
+
+        <p>We wish you a comfortable and pleasant stay! 🌟</p>
+
+        <p style="margin-top:25px;">
+          Regards,<br/>
+          <strong>Hotel Booking Team</strong>
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f1f3f5; padding:15px; text-align:center; font-size:12px; color:#777;">
+        <p style="margin:0;">This is an automated email. Please do not reply.</p>
+      </div>
+
+    </div>
+  </div>
+  `
+};
+
+await transporter.sendMail(mailOptions);
 
     await session.commitTransaction();
 

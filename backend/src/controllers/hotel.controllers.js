@@ -98,6 +98,7 @@ export const registerHotel = async (req, res) => {
 export const updateHotel = async (req, res) => {
   try {
     const {
+      hotelId,
       name,
       address,
       city,
@@ -112,7 +113,12 @@ export const updateHotel = async (req, res) => {
     if (amenities && !Array.isArray(amenities)) {
       amenities = [amenities];
     }
+const query = { _id: hotelId };
 
+    if (req.user.role !== "admin") {
+      // If not admin, strictly enforce owner check
+      query.owner = req.user.id; 
+    }
     if (
       name === undefined &&
       address === undefined &&
@@ -139,9 +145,9 @@ export const updateHotel = async (req, res) => {
       ...(description !== undefined && { description }),
       ...(Array.isArray(amenities) && amenities.length > 0 && { amenities }),
     };
-
+    
     const hotel = await Hotel.findOneAndUpdate(
-      { owner: req.userId },
+      query,
       updateData,
       { new: true, runValidators: true }
     );
@@ -172,10 +178,13 @@ export const deleteHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
 
-    const hotel = await Hotel.findOneAndDelete({
-      _id: hotelId,
-      owner: req.userId,
-    });
+    const query = { _id: hotelId };
+
+    if (req.user.role !== "admin") {
+      query.owner = req.user.id; 
+    }
+
+    const hotel = await Hotel.findOneAndDelete(query);
 
     if (!hotel) {
       return res.status(404).json({
@@ -345,7 +354,14 @@ export const getMyHotel = async (req, res) => {
 
 export const toggleHotelState = async (req, res) => {
   try {
-    const hotel = await Hotel.findOne({ owner: req.userId });
+    const { hotelId } = req.body;
+    const query = { _id: hotelId };
+    
+    if (req.user.role !== "admin") {
+      query.owner = req.user.id;
+    }
+
+    const hotel = await Hotel.findOne(query);
 
     if (!hotel) {
       return res.status(404).json({

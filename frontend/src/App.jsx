@@ -30,6 +30,8 @@ import OwnerHotelChat from "./pages/owner/HotelChat";
 import OwnerHotelSettings from "./pages/owner/OwnerHotelSettings";
 import RoomSetting from "./pages/owner/RoomSetting";
 import OwnerPayments from "./pages/owner/OwnerPaymnets";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const App = () => {
   return (
@@ -66,6 +68,12 @@ const App = () => {
         <Route path="/owner/setting" element={<OwnerHotelSettings />} />
         <Route path="/owner/hotel/:hotelId/room/:roomId/settings" element={<RoomSetting />} />
         <Route path="/owner/payments" element={<OwnerPayments />} />
+        
+      </Route>
+
+      <Route>
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Route>
     </Routes>
     </>

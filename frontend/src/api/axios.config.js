@@ -39,10 +39,17 @@ api.interceptors.response.use(
           `Bearer ${res.data.accessToken}`;
 
         return api(originalRequest);
-      } catch (err) {
-        // ❌ Refresh token expired → logout
+      } catch (err)  {
         localStorage.removeItem("accessToken");
-        window.location.href = "/login";
+
+        // 🔥 PREVENT LOOP
+        const currentPath = window.location.pathname;
+
+        if (currentPath !== "/auth") {
+          window.location.href =
+            `/auth?redirect=${encodeURIComponent(currentPath)}`;
+        }
+        return Promise.reject(err);
       }
     }
 

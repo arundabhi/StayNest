@@ -26,6 +26,7 @@ import analyticRouter from "./routes/analytic.routes.js";
 import availabilityRouter from "./routes/availability.routes.js";
 import { apiLimiter } from "./middelwares/rateLimiter.js";
 
+
 dotenv.config({ path: "./.env" });
 
 const app = express();
@@ -75,6 +76,7 @@ app.use("/api/v1/availability", availabilityRouter);
 app.get("/", (req, res) => {
   res.send("API running");
 });
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import api from "../../api/axios.config";
 import toast from "react-hot-toast";
+import {  useNavigate } from "react-router-dom";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
@@ -25,7 +26,7 @@ const OwnerDashboard = () => {
     paymentAnalytics: null,
     guestAnalytics: null,
   });
-
+const navigate = useNavigate()
   useEffect(() => {
     fetchAllAnalytics();
   }, []);
@@ -55,7 +56,8 @@ const OwnerDashboard = () => {
         guestAnalytics: guest.data.analytics,
       });
     } catch (err) {
-      toast.error("Failed to load dashboard analytics");
+      toast.error(err.message || "Failed to load dashboard analytics");
+      navigate('/')
     } finally {
       setLoading(false);
     }

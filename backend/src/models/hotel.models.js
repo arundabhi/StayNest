@@ -77,7 +77,7 @@ const hotelSchema = new Schema(
 
     isApproved: {
       type: Boolean,
-      default: false, // admin approves hotel
+      default: false, 
     },
 
     isActive: {

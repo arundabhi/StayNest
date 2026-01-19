@@ -1,8 +1,8 @@
 import express from "express";
-import { adminLogin, approveHotel, createOwner, getAllOwners, getRegisteredHotels } from "../controllers/admin.controllers.js";
+import { adminLogin, approveHotel, createOwner, deleteOwner, getAllHotelsAdmin, getAllOwners, getRegisteredHotels } from "../controllers/admin.controllers.js";
 import { isAdmin } from "../middelwares/admin.js";
 import { protect } from "../middelwares/auth.js";
-import { getAllHotels } from "../controllers/hotel.controllers.js";
+
 
 const adminRouter = express.Router();
 
@@ -14,13 +14,19 @@ adminRouter.get(
   "/hotels",
   protect,
   isAdmin,
-  getAllHotels
+  getAllHotelsAdmin
 );
 adminRouter.get(
   "/register-hotels",
   protect,
   isAdmin,
   getRegisteredHotels
+);
+adminRouter.delete(
+  "/owners/:ownerId",
+  protect,
+  isAdmin,
+  deleteOwner
 );
 
 

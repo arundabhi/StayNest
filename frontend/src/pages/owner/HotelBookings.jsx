@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../api/axios.config";
+import { useNavigate } from "react-router-dom";
 
 const HotelBookings = () => {
   const [hotels, setHotels] = useState([]);
@@ -14,6 +15,7 @@ const HotelBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate()
 
   useEffect(() => {
     api.get("/hotels/my/hotel")
@@ -24,7 +26,10 @@ const HotelBookings = () => {
           fetchBookings(ownerHotels[0]._id);
         }
       })
-      .catch(() => toast.error("Failed to load hotels"));
+      .catch(() => {
+        toast.error("Failed to load hotels")
+        navigate('/')
+      } );
   }, []);
 
   const fetchBookings = async (id) => {

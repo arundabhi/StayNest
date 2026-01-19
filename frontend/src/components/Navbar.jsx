@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { 
   Menu, X, User, LogOut, BookOpen, 
   ChevronDown, Heart, Clock3, Home, PlusCircle, 
-  User2, LayoutDashboard, BedDouble, CalendarCheck, MessageSquare
+  User2, LayoutDashboard, BedDouble, CalendarCheck, MessageSquare,
+  Hotel
 } from "lucide-react";
 import api from '../api/axios.config'
 const Navbar = () => {
@@ -177,6 +178,7 @@ useEffect(()=>{
                           <DropdownItem icon={<LayoutDashboard size={18} />} label="Admin Dashboard" onClick={() => { navigate("/owner/dashboard"); setProfileOpen(false); }} />
                           <DropdownItem icon={<BedDouble size={18} />} label="Payment Details" onClick={() => { navigate("/owner/payments"); setProfileOpen(false); }} />
                           <DropdownItem icon={<BookOpen size={18} />} label="Bookings" onClick={() => { navigate("/owner/bookings"); setProfileOpen(false); }} />
+                          <DropdownItem icon={<Hotel size={18} />} label="Hotel Settings" onClick={() => { navigate("/owner/setting"); setProfileOpen(false); }} />
                         </>
                       ) : (
                         <>
