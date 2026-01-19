@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import hotelBg from "../assests/hotelBg6.webp"; // Ensure this path is correct
+import hotelBg from "../assets/hotelBg6.webp"; 
 import { MapPin, Search, Users, CalendarDays, ChevronDown, Sparkles } from "lucide-react";
 import { DateRange } from "react-date-range";
 import { format, addDays } from "date-fns";
