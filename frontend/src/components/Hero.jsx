@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import hotelBg from "../assets/hotelBg6.webp"; 
 import { MapPin, Search, Users, CalendarDays, ChevronDown, Sparkles } from "lucide-react";
 import { DateRange } from "react-date-range";
 import { format, addDays } from "date-fns";
@@ -50,8 +49,8 @@ const Hero = () => {
     <section className="relative min-h-screen flex items-center justify-center py-20">
       {/* Background Image Layer */}
       <div 
-        className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-10000 hover:scale-110"
-        style={{ backgroundImage: `url(${hotelBg})` }}
+        className="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000 hover:scale-110"
+        style={{ backgroundImage: `url('/hero.webp')` }}
       />
       
       {/* Dark Overlay for contrast */}
