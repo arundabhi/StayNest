@@ -19,7 +19,7 @@ const BookingDetails = () => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
-
+  
   useEffect(() => {
     const fetchBooking = async () => {
       try {
@@ -35,6 +35,8 @@ const BookingDetails = () => {
         );
 
         if (res.data.success) {
+          console.log(res.data.booking);
+          
           setBooking(res.data.booking);
         }
       } catch (err) {
@@ -45,6 +47,19 @@ const BookingDetails = () => {
     };
     fetchBooking();
   }, [bookingId, navigate]);
+
+  const calculateNights = (checkIn, checkOut) => {
+  if (!checkIn || !checkOut) return 0;
+
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+
+  const diffTime = end.getTime() - start.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays;
+};
+const nights = calculateNights(booking?.checkIn, booking?.checkOut);
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -167,7 +182,7 @@ const BookingDetails = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
                   <DetailItem icon={<Users className="text-blue-500" />} label="Guests" value={`${booking.totalGuest} Person(s)`} />
                   <DetailItem icon={<Wallet className="text-blue-500" />} label="Payment" value={booking.paymentStatus.toUpperCase()} />
-                  <DetailItem icon={<Calendar className="text-blue-500" />} label="Duration" value="3 Nights" />
+                  <DetailItem icon={<Calendar className="text-blue-500" />} label="Duration" value={`${nights} Night`} />
                 </div>
 
                 {/* REVIEW SECTION */}
