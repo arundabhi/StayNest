@@ -69,7 +69,7 @@ const redirect = params.get("redirect")
 
       navigate(redirect);
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err?.message || "Login failed");
     } finally {
       setLoading(false);
     }

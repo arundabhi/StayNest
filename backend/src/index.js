@@ -77,4 +77,7 @@ app.get("/", (req, res) => {
   res.send("API running");
 });
 
-export default app;
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
+
