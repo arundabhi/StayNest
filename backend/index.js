@@ -5,26 +5,26 @@ import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-import './api/cron/cleanup.js'
-import connectDb from "./db/index.js";
+import './src/api/cron/cleanup.js'
+import connectDb from "./src/db/index.js";
 
 
-import userRouter from "./routes/user.routes.js";
-import adminRouter from "./routes/admin.routes.js";
-import authRouter from "./routes/auth.routes.js";
-import hotelRouter from "./routes/hotel.routes.js";
-import roomRouter from "./routes/room.routes.js";
-import bookingRouter from "./routes/booking.routes.js";
-import waitlistRouter from "./routes/waitlist.routes.js";
-import wishlistRouter from "./routes/wishlist.router.js";
-import reviewRouter from "./routes/review.routes.js";
-import chatRouter from "./routes/chat.routes.js";
-import paymentRouter from "./routes/payment.routes.js";
-import couponRouter from "./routes/coupone.routes.js";
-import recommendationRoutes from "./routes/recommendation.routes.js";
-import analyticRouter from "./routes/analytic.routes.js";
-import availabilityRouter from "./routes/availability.routes.js";
-import { apiLimiter } from "./middelwares/rateLimiter.js";
+import userRouter from "./src/routes/user.routes.js";
+import adminRouter from "./src/routes/admin.routes.js";
+import authRouter from "./src/routes/auth.routes.js";
+import hotelRouter from "./src/routes/hotel.routes.js";
+import roomRouter from "./src/routes/room.routes.js";
+import bookingRouter from "./src/routes/booking.routes.js";
+import waitlistRouter from "./src/routes/waitlist.routes.js";
+import wishlistRouter from "./src/routes/wishlist.router.js";
+import reviewRouter from "./src/routes/review.routes.js";
+import chatRouter from "./src/routes/chat.routes.js";
+import paymentRouter from "./src/routes/payment.routes.js";
+import couponRouter from "./src/routes/coupone.routes.js";
+import recommendationRoutes from "./src/routes/recommendation.routes.js";
+import analyticRouter from "./src/routes/analytic.routes.js";
+import availabilityRouter from "./src/routes/availability.routes.js";
+import { apiLimiter } from "./src/middelwares/rateLimiter.js";
 
 
 dotenv.config({ path: "./.env" });
