@@ -185,7 +185,7 @@ export const deleteOwner = async (req, res) => {
   try {
     const { ownerId } = req.params;
 
-    // 1. Find user
+   
     const owner = await User.findById(ownerId);
 
     if (!owner) {
@@ -195,7 +195,7 @@ export const deleteOwner = async (req, res) => {
       });
     }
 
-    // 2. Prevent deleting admin or normal user
+    
     if (owner.role !== "owner") {
       return res.status(403).json({
         success: false,
@@ -203,10 +203,10 @@ export const deleteOwner = async (req, res) => {
       });
     }
 
-    // 3. Delete / Disable owner's hotels
+ 
     await Hotel.deleteMany({ owner: ownerId });
 
-    // 4. Delete owner account
+   
     await User.findByIdAndDelete(ownerId);
 
     return res.status(200).json({

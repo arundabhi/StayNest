@@ -33,6 +33,7 @@ import OwnerPayments from "./pages/owner/OwnerPaymnets";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
+
 const App = () => {
   return (
     <>
@@ -44,6 +45,7 @@ const App = () => {
         <Route path="/hotels/:hotelId" element={<HotelDetails />} />
         <Route path="/bookings/:hotelId/:roomId" element={<BookRoom />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/reset-password" element={<AuthPage />} />
         <Route path="/bookings/my/:bookingId" element={<BookingDetails />} />
         <Route path="/coupons" element={<Coupons />} />
         <Route path="/hotels" element={<Hotels />} />

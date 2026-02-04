@@ -20,7 +20,7 @@ paymentRouter2.get(
   verifyStripePayment
 );
 
-// Verify Razorpay payment
+
 paymentRouter2.post(
   "/razorpay/verify",
   protect,

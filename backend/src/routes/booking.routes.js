@@ -19,7 +19,7 @@ import { authorizeRoles } from "../middelwares/role.js";
 
 const bookingRouter = express.Router();
 
-// user
+
 bookingRouter.post("/:hotelId/:roomId",protect,createBooking);
 bookingRouter.patch('/confirm/:bookingId',protect,confirmBooking)
 bookingRouter.patch("/cancel/:bookingId",protect, cancelBooking);
@@ -34,7 +34,7 @@ bookingRouter.get(
   previewBookingPrice
 );
 
-// availability
+
 bookingRouter.get(
   "/availability/:hotelId/:roomId",
   protect,
@@ -43,7 +43,7 @@ bookingRouter.get(
 
 
 
-// payment (should be protected / webhook ideally)
+
 bookingRouter.patch("/payment/:bookingId", updatePaymentStatus);
 bookingRouter.patch(
   "/payment/verify/:bookingId",
@@ -51,7 +51,6 @@ bookingRouter.patch(
   verifyPayment
 );
 
-// owner / admin
 bookingRouter.get("/hotel/:hotelId",protect,
   authorizeRoles("owner", "admin"), getAllBookingsForHotel);
 

@@ -47,7 +47,7 @@ const hotelSchema = new Schema(
 
     amenities: [
       {
-        type: String, // wifi, parking, pool, etc.
+        type: String,
       },
     ],
 
@@ -70,7 +70,7 @@ const hotelSchema = new Schema(
         default: "Point",
       },
       coordinates: {
-        type: [Number], // [longitude, latitude]
+        type: [Number],
         required: true,
       },
     },
@@ -90,7 +90,7 @@ const hotelSchema = new Schema(
   { timestamps: true }
 );
 
-// 📍 Enable geo queries
+
 hotelSchema.index({ location: "2dsphere" });
 
 export const Hotel = mongoose.model("Hotel", hotelSchema);

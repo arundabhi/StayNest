@@ -31,10 +31,10 @@ const paymentSchema = new Schema(
       default: "pending",
     },
 
-    // Stripe
+   
     stripeSessionId: String,
 
-    // Razorpay
+  
     razorpayOrderId: String,
     razorpayPaymentId: String,
     razorpaySignature: String,

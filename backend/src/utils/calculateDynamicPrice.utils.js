@@ -12,7 +12,7 @@ export const calculateDynamicPrice = async ({
     const startDate = new Date(checkIn);
     const endDate = new Date(checkOut);
 
-    /* ---------------- SEASON MULTIPLIER ---------------- */
+   
 
     let seasonMultiplier = 1;
 
@@ -26,7 +26,6 @@ export const calculateDynamicPrice = async ({
       seasonMultiplier = pricingRule.multiplier;
     }
 
-    /* ---------------- OCCUPANCY MULTIPLIER (SMOOTH) ---------------- */
 
     const occupancyMultiplier =
       occupancyRate >= 0.95 ? 1.4 :
@@ -34,7 +33,6 @@ export const calculateDynamicPrice = async ({
       occupancyRate >= 0.7  ? 1.1  :
       1;
 
-    /* ---------------- WEEKEND MULTIPLIER (PROPORTIONAL) ---------------- */
 
     const { weekendDays, totalDays } = countWeekendDays(startDate, endDate);
 
@@ -43,14 +41,13 @@ export const calculateDynamicPrice = async ({
         ? 1 + (0.2 * (weekendDays / totalDays))
         : 1;
 
-    /* ---------------- FINAL MULTIPLIER ---------------- */
+    
 
     let finalMultiplier =
       seasonMultiplier *
       occupancyMultiplier *
       weekendMultiplier;
 
-    // 🔒 Hard safety cap (business rule)
     finalMultiplier = Math.min(finalMultiplier, 2.5);
 
     const pricePerDay = Math.round(basePrice * finalMultiplier);
@@ -71,7 +68,7 @@ export const calculateDynamicPrice = async ({
   } catch (error) {
     console.error("Dynamic pricing error:", error);
 
-    // 🚨 Safe fallback
+  
     return {
       pricePerDay: basePrice,
       breakdown: {
@@ -83,18 +80,15 @@ export const calculateDynamicPrice = async ({
   }
 };
 
-/* ------------------------------------------------------------------ */
-/* ---------------- HELPER: COUNT WEEKEND DAYS ----------------------- */
-/* ------------------------------------------------------------------ */
+
 
 const countWeekendDays = (startDate, endDate) => {
   let weekendDays = 0;
   let totalDays = 0;
 
-  const date = new Date(startDate); // clone to avoid mutation
-
+  const date = new Date(startDate); 
   while (date < endDate) {
-    const day = date.getDay(); // 0 = Sunday, 6 = Saturday
+    const day = date.getDay();
     totalDays++;
 
     if (day === 0 || day === 6) {

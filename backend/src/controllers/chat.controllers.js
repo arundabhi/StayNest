@@ -4,7 +4,7 @@ import { Hotel } from "../models/hotel.models.js";
 const connections = {};
 
 export const sseController = (req, res) => {
-  const { userId } = req.params; // ✅ FIXED
+  const { userId } = req.params;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -46,7 +46,7 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // 🔥 Find hotel to know owner
+  
     const hotel = await Hotel.findById(hotelId);
     if (!hotel) {
       return res.status(404).json({ success: false, message: "Hotel not found" });
@@ -60,11 +60,11 @@ export const sendMessage = async (req, res) => {
       status: "sent",
     });
 
-    // 🔥 Decide WHO receives the real-time event
+
     const receiverId =
       sender === "user"
-        ? hotel.owner.toString() // send to hotel owner
-        : senderId;              // send to user (when hotel replies)
+        ? hotel.owner.toString() 
+        : senderId;             
 
     if (connections[receiverId]) {
       connections[receiverId].forEach(stream => {

@@ -19,7 +19,7 @@ const AddRoom2 = () => {
   const [form, setForm] = useState({
     hotelId: "",
     title: "",
-    roomType: "Standard",
+    roomType: "single",
     pricePerDay: "",
     totalRooms: "",
     maxGuests: "",
@@ -118,7 +118,7 @@ const AddRoom2 = () => {
 
       await api.post(`/rooms/hotel/${form.hotelId}`, fd);
       toast.success("Room category added!");
-      setForm({ hotelId: "", title: "", roomType: "Standard", pricePerDay: "", totalRooms: "", maxGuests: "", amenities: [] });
+      setForm({ hotelId: "", title: "", roomType: "single", pricePerDay: "", totalRooms: "", maxGuests: "", amenities: [] });
       setImages([]);
       setPreviewImages([]);
     } catch (err) {
@@ -166,10 +166,11 @@ const AddRoom2 = () => {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
                 <select value={form.roomType} onChange={(e) => setForm({...form, roomType: e.target.value})} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-none outline-none font-bold text-slate-700">
-                  <option value="Standard">Standard</option>
-                  <option value="Deluxe">Deluxe</option>
-                  <option value="Suite">Suite</option>
-                  <option value="Luxury">Luxury</option>
+                  <option value="single">single</option>
+                  <option value="double">double</option>
+                  <option value="deluxe">deluxe</option>
+                  <option value="suite">suite</option>
+
                 </select>
               </div>
 

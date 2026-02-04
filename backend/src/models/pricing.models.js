@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const pricingSchema = new Schema(
   {
     name: {
-      type: String, // e.g. Diwali, New Year, Peak Season
+      type: String,
       required: true,
       trim: true
     },
@@ -20,10 +20,10 @@ const pricingSchema = new Schema(
     },
 
     multiplier: {
-      type: Number, // 1.2, 1.5, 2.0
+      type: Number, 
       required: true,
-      min: 0.1, // prevent zero / negative pricing
-      max: 10   // prevent insane prices
+      min: 0.1, 
+      max: 10   
     },
 
     hotelId: {
@@ -31,7 +31,7 @@ const pricingSchema = new Schema(
       ref: "Hotel",
       required: true
     },
-    specialOfferPercent:Number,           // ✅ store for audit
+    specialOfferPercent:Number,          
     specialOfferAmount:Number
   },
   { timestamps: true }

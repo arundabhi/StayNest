@@ -1,10 +1,10 @@
-// availability.controllers.js
+
 import { Booking } from "../models/booking.models.js";
 import { Room } from "../models/room.models.js";
 import { Hotel } from "../models/hotel.models.js";
 import mongoose from "mongoose";
 
-// 📅 1. Get Room Availability Calendar (Date Range)
+
 export const getRoomAvailabilityCalendar = async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -121,7 +121,7 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
   }
 };
 
-// 🏨 2. Get Hotel Availability Calendar (All Rooms)
+
 export const getHotelAvailabilityCalendar = async (req, res) => {
   try {
     const { hotelId } = req.params;
@@ -141,7 +141,7 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
       });
     }
 
-    // Get hotel and all rooms
+  
     const [hotel, rooms] = await Promise.all([
       Hotel.findById(hotelId),
       Room.find({ hotelId }),
@@ -172,7 +172,7 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
       });
     }
 
-    // Get all bookings for this hotel in date range
+   
     const roomIds = rooms.map((r) => r._id);
     const bookings = await Booking.find({
       roomId: { $in: roomIds },
@@ -180,10 +180,8 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
       $or: [{ checkIn: { $lte: end }, checkOut: { $gte: start } }],
     });
 
-    // Calculate total capacity
     const totalRoomsCount = rooms.reduce((sum, room) => sum + room.totalRooms, 0);
 
-    // Build calendar
     const calendar = [];
     const currentDate = new Date(start);
 
@@ -256,7 +254,7 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
   }
 };
 
-// 📊 3. Get Month View Calendar
+
 export const getMonthViewCalendar = async (req, res) => {
   try {
     const { roomId, year, month } = req.query;
@@ -276,11 +274,9 @@ export const getMonthViewCalendar = async (req, res) => {
       });
     }
 
-    // Get first and last day of month
     const firstDay = new Date(Number(year), Number(month) - 1, 1);
     const lastDay = new Date(Number(year), Number(month), 0);
 
-    // Get bookings for the month
     const bookings = await Booking.find({
       roomId,
       status: { $in: ["pending", "booked"] },
@@ -289,20 +285,19 @@ export const getMonthViewCalendar = async (req, res) => {
       ],
     }).populate("userId", "name email");
 
-    // Build calendar grid (including prev/next month days for full weeks)
-    const startDay = firstDay.getDay(); // 0 = Sunday
+    const startDay = firstDay.getDay(); 
     const daysInMonth = lastDay.getDate();
 
     const calendarGrid = [];
     let currentDate = new Date(firstDay);
-    currentDate.setDate(currentDate.getDate() - startDay); // Start from Sunday
+    currentDate.setDate(currentDate.getDate() - startDay); 
 
-    // Generate 6 weeks (42 days) to cover all possibilities
+   
     for (let i = 0; i < 42; i++) {
       const dateStr = currentDate.toISOString().split("T")[0];
       const isCurrentMonth = currentDate.getMonth() === Number(month) - 1;
 
-      // Count bookings for this date
+     
       const dayBookings = bookings.filter((booking) => {
         const bookingStart = new Date(booking.checkIn);
         const bookingEnd = new Date(booking.checkOut);
@@ -338,7 +333,7 @@ export const getMonthViewCalendar = async (req, res) => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // Format into weeks
+
     const weeks = [];
     for (let i = 0; i < 6; i++) {
       weeks.push(calendarGrid.slice(i * 7, (i + 1) * 7));
@@ -374,7 +369,6 @@ export const getMonthViewCalendar = async (req, res) => {
   }
 };
 
-// ⚡ 4. Quick Availability Check (Specific Dates)
 export const quickAvailabilityCheck = async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -405,7 +399,7 @@ export const quickAvailabilityCheck = async (req, res) => {
       });
     }
 
-    // Count overlapping bookings
+ 
     const bookedCount = await Booking.countDocuments({
       roomId,
       status: { $in: ["pending", "booked"] },
@@ -443,7 +437,7 @@ export const quickAvailabilityCheck = async (req, res) => {
   }
 };
 
-// 🔔 5. Get Booking Details for Calendar Date
+
 export const getDateBookingDetails = async (req, res) => {
   try {
     const { roomId, date } = req.query;
@@ -461,7 +455,7 @@ export const getDateBookingDetails = async (req, res) => {
     const nextDay = new Date(selectedDate);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    // Get bookings that include this date
+ 
     const bookings = await Booking.find({
       roomId,
       status: { $in: ["pending", "booked"] },
@@ -501,7 +495,7 @@ export const getDateBookingDetails = async (req, res) => {
   }
 };
 
-// 📈 6. Availability Forecast (Next 30 Days)
+
 export const getAvailabilityForecast = async (req, res) => {
   try {
     const { hotelId } = req.params;
@@ -523,7 +517,7 @@ export const getAvailabilityForecast = async (req, res) => {
     const next30Days = new Date(today);
     next30Days.setDate(next30Days.getDate() + 30);
 
-    // Get all future bookings
+   
     const bookings = await Booking.find({
       hotelId,
       status: { $in: ["pending", "booked"] },
@@ -531,7 +525,7 @@ export const getAvailabilityForecast = async (req, res) => {
       checkOut: { $gt: today },
     });
 
-    // Calculate forecast day by day
+  
     const forecast = [];
     const currentDate = new Date(today);
 

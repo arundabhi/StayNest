@@ -20,6 +20,6 @@ authRouter.post("/logout", protect, logoutUser);
 authRouter.post("/refresh-token", refreshAccessToken);
 authRouter.post("/owner/login", ownerLogin);
 authRouter.post("/forgot-password", forgotPassword);
-authRouter.post("/reset-password/:token", resetPassword);
+authRouter.post("/reset-password", resetPassword);
 
 export default authRouter;

@@ -69,7 +69,7 @@ export const sanitizeInput = (input) => {
 export const validatePhoneNumber = (phone) => {
   if (!phone) return null;
   
-  // Remove all non-digits
+
   const cleaned = phone.replace(/\D/g, '');
   
   if (cleaned.length < 10 || cleaned.length > 15) {

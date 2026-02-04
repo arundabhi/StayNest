@@ -177,7 +177,7 @@ const ListProperty = () => {
       });
       if (res.data.success) {
         toast.success("Hotel listed successfully!");
-        navigate("/my/hotel");
+        navigate("/");
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed");

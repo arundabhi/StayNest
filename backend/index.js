@@ -34,7 +34,7 @@ const port = process.env.PORT || 3000;
 
 connectDb();
 
-// ✅ CORRECT CORS
+
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,
@@ -44,19 +44,18 @@ app.use(
   })
 );
 
-// Security
 app.use(helmet());
 app.use(hpp());
 app.use(cookieParser());
 
-// Body parsing
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Rate limiter
+
 app.use("/api/v1", apiLimiter);
 
-// Routes
+
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/auth", authRouter);

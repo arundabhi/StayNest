@@ -1,4 +1,4 @@
-// sendEmail.utils.js
+
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
@@ -12,13 +12,15 @@ const transporter = nodemailer.createTransport({
 
 export default transporter
 
-export const sendEmail = async ({ to, subject, html }) => {
+export const sendEmail = async ({ to, subject, body }) => {
   try {
     await transporter.sendMail({
       from: process.env.SENDER_EMAIL,
       to,
       subject,
-      html
+      html:body,
+      text: body.replace(/<[^>]+>/g, ""),
+
     });
     console.log('✅ Email sent to:', to);
   } catch (error) {

@@ -55,7 +55,7 @@ export const paymentOnStripe = async (req, res) => {
             product_data: {
               name: `Hotel Booking - ${booking.hotelId.name}`,
             },
-            unit_amount: booking.totalPrice * 100, // ✅ paise
+            unit_amount: booking.totalPrice * 100, 
           },
           quantity: 1,
         },
@@ -346,7 +346,7 @@ export const getHotelPayments = async (req, res) => {
   try {
     const ownerId = req.userId;
 
-    // 🔒 Owner → Hotel
+
     const hotel = await Hotel.findOne({ owner: ownerId });
     if (!hotel) {
       return res.status(404).json({
@@ -355,7 +355,7 @@ export const getHotelPayments = async (req, res) => {
       });
     }
 
-    // 🔍 Find bookings for this hotel
+ 
     const bookingIds = await Booking.find({ hotelId: hotel._id }).distinct("_id");
 
     const payments = await Payment.find({

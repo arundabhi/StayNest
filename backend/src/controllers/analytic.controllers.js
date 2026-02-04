@@ -193,7 +193,7 @@ export const getDashboardOverview = async (req, res) => {
   }
 };
 
-// 📈 2. Revenue Chart Data (Monthly for last 12 months)
+
 export const getRevenueChart = async (req, res) => {
   try {
     const userId = req.userId;
@@ -288,7 +288,7 @@ export const getRevenueChart = async (req, res) => {
   }
 };
 
-// 📊 3. Booking Status Distribution (Pie Chart)
+
 export const getBookingStatusDistribution = async (req, res) => {
   try {
     const userId = req.userId;
@@ -336,7 +336,7 @@ export const getBookingStatusDistribution = async (req, res) => {
   }
 };
 
-// 🏨 4. Room Performance Analytics
+
 export const getRoomPerformance = async (req, res) => {
   try {
     const userId = req.userId;
@@ -412,7 +412,7 @@ export const getRoomPerformance = async (req, res) => {
   }
 };
 
-// 📅 5. Daily Bookings Trend (Last 30 Days)
+
 export const getDailyBookingsTrend = async (req, res) => {
   try {
     const userId = req.userId;
@@ -469,7 +469,6 @@ export const getDailyBookingsTrend = async (req, res) => {
   }
 };
 
-// ⭐ 6. Review Analytics
 export const getReviewAnalytics = async (req, res) => {
   try {
     const userId = req.userId;
@@ -561,7 +560,7 @@ export const getReviewAnalytics = async (req, res) => {
   }
 };
 
-// 💰 7. Payment Analytics
+
 export const getPaymentAnalytics = async (req, res) => {
   try {
     const userId = req.userId;
@@ -629,7 +628,7 @@ export const getPaymentAnalytics = async (req, res) => {
   }
 };
 
-// 👥 8. Guest Analytics
+
 export const getGuestAnalytics = async (req, res) => {
   try {
     const userId = req.userId;

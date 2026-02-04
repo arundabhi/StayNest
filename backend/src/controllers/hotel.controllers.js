@@ -116,7 +116,7 @@ export const updateHotel = async (req, res) => {
 const query = { _id: hotelId };
 
     if (req.user.role !== "admin") {
-      // If not admin, strictly enforce owner check
+  
       query.owner = req.user.id; 
     }
     if (
@@ -246,7 +246,7 @@ export const searchHotel = async (req, res) => {
       });
     }
 
-    // 1️⃣ Find hotels by name / city / state
+
     const hotels = await Hotel.find({
       $or: [
         { name: { $regex: destination, $options: "i" } },
@@ -262,7 +262,6 @@ export const searchHotel = async (req, res) => {
       });
     }
 
-    // 2️⃣ If no dates provided → return basic search
     if (!checkIn || !checkOut) {
       return res.status(200).json({
         success: true,
@@ -270,7 +269,7 @@ export const searchHotel = async (req, res) => {
       });
     }
 
-    // 3️⃣ Filter hotels by room availability
+ 
     const availableHotels = [];
 
     for (const hotel of hotels) {
@@ -425,7 +424,7 @@ export const getNearbyHotels = async (req, res) => {
             type: "Point",
             coordinates: [longitude, latitude],
           },
-          $maxDistance: 5000, // 5km
+          $maxDistance: 5000, 
         },
       },
       isActive: true,

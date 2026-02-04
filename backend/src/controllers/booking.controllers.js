@@ -29,7 +29,6 @@ export const createBooking = async (req, res) => {
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
 
-    /* ---------------- AUTH & BASIC VALIDATION ---------------- */
 
     if (!userId) {
       await session.abortTransaction();
@@ -128,7 +127,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    /* ---------------- AVAILABILITY CHECK ---------------- */
+ 
 
     const overlappingBookings = await Booking.countDocuments({
       roomId,
@@ -162,7 +161,7 @@ export const createBooking = async (req, res) => {
 
     const pricePerDay = dynamicPricing.pricePerDay;
 
-    /* ---------------- BASE PRICE ---------------- */
+  
 
     const pricing = calculateFinalPrice({
   pricePerDay,
@@ -180,12 +179,12 @@ pricing = {
 
 let baseSubtotal = pricing.subtotal;
 
-/* ---------------- PRICE ENGINE (SINGLE SOURCE OF TRUTH) ---------------- */
+
 let couponApplied = false;
 let couponCode = null;
 let subtotal = pricing.subtotal;
 
-/* --- SPECIAL OFFER (FIRST) --- */
+
 const offer = await getSpecialOfferForHotel(hotelId);
 
 if (offer) {
@@ -196,7 +195,7 @@ if (offer) {
   subtotal -= specialOfferAmount;
 }
 
-/* --- COUPON (SECOND) --- */
+
 let couponDiscount = 0;
 
 if (couponCodeFromClient) {
@@ -220,7 +219,7 @@ if (couponCodeFromClient) {
   couponCode = coupon.code;
 }
 
-/* --- TAX & FEES (LAST) --- */
+
 const gstAmount = Math.round(subtotal * 0.12);
 const serviceFee = pricing.serviceFee;
 
@@ -241,7 +240,7 @@ const discountAmount = specialOfferAmount + couponDiscount;
 
       pricePerNight: pricePerDay,
 
-      basePrice: pricing.subtotal + discountAmount, // original price
+      basePrice: pricing.subtotal + discountAmount,
       discountAmount,
 
       specialOfferPercent,
@@ -416,7 +415,7 @@ export const previewBookingPrice = async (req, res) => {
     const occupancyRate =
       room.totalRooms > 0 ? overlappingBookings / room.totalRooms : 0;
 
-    /* -------- DYNAMIC PRICE -------- */
+   
     const dynamicPricing = await calculateDynamicPrice({
       basePrice: room.pricePerDay,
       checkIn: start,
@@ -430,14 +429,14 @@ export const previewBookingPrice = async (req, res) => {
       nights,
     });
 
-    /* -------- PRICE ENGINE (SAME AS CREATE BOOKING) -------- */
+
     let subtotal = pricing.subtotal;
 
     let specialOfferPercent = 0;
     let specialOfferAmount = 0;
     let couponDiscount = 0;
 
-    /* 1️⃣ SPECIAL OFFER FIRST */
+
     const offer = await getSpecialOfferForHotel(hotelId);
     if (offer) {
       specialOfferPercent = offer.discountPercent;
@@ -447,7 +446,7 @@ export const previewBookingPrice = async (req, res) => {
       subtotal -= specialOfferAmount;
     }
 
-    /* 2️⃣ COUPON SECOND */
+  
     if (couponCode) {
       const coupon = await Coupon.findOne({
         code: couponCode,
@@ -460,7 +459,7 @@ export const previewBookingPrice = async (req, res) => {
       }
     }
 
-    /* 3️⃣ TAX & FEES LAST */
+  
     const gstAmount = Math.round(subtotal * 0.12);
     const totalPrice = subtotal + gstAmount + pricing.serviceFee;
 
@@ -991,7 +990,7 @@ export const getPastBooking = async (req, res) => {
 
 export const autoCancelledPendingBooking = async () => {
   try {
-    const TIME_LIMIT = 15 * 60 * 1000; //15 minit 
+    const TIME_LIMIT = 15 * 60 * 1000; 
     const expiryTime = new Date(Date.now() - TIME_LIMIT);
 
     const result = await Booking.updateMany(
@@ -1024,7 +1023,7 @@ export const getUpcomingBooking = async (req, res) => {
       });
     }
 
-    // ✅ Use DATE object (not string)
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -1212,7 +1211,7 @@ export const deleteBooking = async (req,res) => {
     const { bookingId } = req.params;
     const userId = req.userId;
 
-    // 1️⃣ Find booking
+
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
@@ -1222,7 +1221,7 @@ export const deleteBooking = async (req,res) => {
       });
     }
 
-    // 2️⃣ Ownership check
+
     if (!booking.userId.equals(userId)) {
   return res.status(403).json({
     success: false,
@@ -1231,7 +1230,7 @@ export const deleteBooking = async (req,res) => {
 }
 
 
-    // 3️⃣ Allow delete ONLY for past or cancelled bookings
+    
     if (!["canceled", "completed"].includes(booking.status)) {
       return res.status(400).json({
         success: false,
@@ -1239,7 +1238,7 @@ export const deleteBooking = async (req,res) => {
       });
     }
 
-    // 4️⃣ Delete booking
+
     await booking.deleteOne();
 
     return res.status(200).json({
@@ -1302,7 +1301,7 @@ export const autoCompleteBooking = async () => {
     const bookingsToComplete = await Booking.find({
       status: "booked",
       checkOut: { $lt: now },
-      paymentStatus: { $in: ["paid", "cod"] }, // allow COD bookings too
+      paymentStatus: { $in: ["paid", "cod"] }, 
     });
 
     if (bookingsToComplete.length === 0) {

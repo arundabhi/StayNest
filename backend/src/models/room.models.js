@@ -15,7 +15,7 @@ const roomSchema = new Schema(
 
     title: {
       type: String,
-      required: true, // e.g. "Deluxe Sea View Room"
+      required: true, 
       trim: true
     },
     description:{

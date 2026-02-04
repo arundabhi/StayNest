@@ -106,53 +106,57 @@ const redirect = params.get("redirect")
 
   /* ---------------- FORGOT PASSWORD ---------------- */
   const handleForgotPassword = async () => {
-    if (!form.email) {
-      return setError("Email is required");
-    }
+  if (!form.email) {
+    return setError("Email is required");
+  }
 
-    try {
-      setLoading(true);
-      setError("");
+  try {
+    setLoading(true);
+    setError("");
 
-      await api.post(
-        `${import.meta.env.VITE_API_URL}/auth/forgot-password`,
-        { email: form.email }
-      );
+    await api.post(
+      `${import.meta.env.VITE_API_URL}/auth/forgot-password`,
+      { email: form.email }
+    );
 
-      switchMode("reset");
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to send OTP");
-    } finally {
-      setLoading(false);
-    }
-  };
+    // go to reset step
+    switchMode("reset");
+  } catch (err) {
+    setError(err.response?.data?.message || "Failed to send OTP");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   /* ---------------- RESET PASSWORD ---------------- */
   const handleResetPassword = async () => {
-    if (!form.email || !form.otp || !form.password) {
-      return setError("All fields are required");
-    }
+  if (!form.email || !form.otp || !form.password) {
+    return setError("All fields are required");
+  }
 
-    try {
-      setLoading(true);
-      setError("");
+  try {
+    setLoading(true);
+    setError("");
 
-      await api.post(
-        `${import.meta.env.VITE_API_URL}/auth/reset-password`,
-        {
-          email: form.email,
-          otp: form.otp,
-          password: form.password,
-        }
-      );
+    await api.post(
+      `${import.meta.env.VITE_API_URL}/auth/reset-password`,
+      {
+        otp:form.otp.trim(),
+        email: form.email,
+        newPassword: form.password,
+      }
+    );
 
-      switchMode("login");
-    } catch (err) {
-      setError(err.response?.data?.message || "Password reset failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    // back to login after success
+    switchMode("login");
+  } catch (err) {
+    setError(err?.data?.message || "Password reset failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   /* ---------------- UI ---------------- */
   return (

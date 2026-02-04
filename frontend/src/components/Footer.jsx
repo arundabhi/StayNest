@@ -75,18 +75,18 @@ const Footer = () => {
               <ul className="space-y-4 text-sm">
                 <li className="flex items-start gap-3">
                   <MapPin size={18} className="text-blue-500 shrink-0" />
-                  <span>123 Sky Tower, Business District,<br />Dubai, UAE</span>
+                  <span>150 Feet Ring Road, Rajkot,<br />Gujarat, India</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Phone size={18} className="text-blue-500 shrink-0" />
-                  <a href="tel:+1234567890" className="hover:text-white transition-colors">+1 (234) 567-890</a>
+                  <a href="tel:+917990816515" className="hover:text-white transition-colors">+91 79908 16515</a>
                 </li>
                 <li className="flex items-center gap-3">
                   <Mail size={18} className="text-blue-500 shrink-0" />
                   <a href="mailto:support@staynext.com" className="hover:text-white transition-colors">support@staynext.com</a>
                 </li>
               </ul>
-            </div>
+            </div>      
 
             {/* Social Icons */}
             <div className="flex items-center gap-4">

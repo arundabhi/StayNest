@@ -20,7 +20,7 @@ export const protect = async (req, res, next) => {
 
    
     if (decoded.role === "admin" && decoded.id === "SYSTEM_ADMIN") {
-      req.user = decoded;        // { id, role }
+      req.user = decoded;        
       req.userId = decoded.id;
       return next();
     }

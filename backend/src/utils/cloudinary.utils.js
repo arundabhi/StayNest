@@ -13,7 +13,7 @@ const uploadCloudinary = (buffer, options = {}) => {
       return reject(new Error("No file buffer provided"));
     }
 
-    // ✅ Validate buffer is Buffer type
+    
     if (!Buffer.isBuffer(buffer)) {
       return reject(new Error("Invalid buffer type"));
     }
@@ -22,8 +22,8 @@ const uploadCloudinary = (buffer, options = {}) => {
       folder: options.folder || "hotels",
       resource_type: options.resourceType || "image",
       transformation: options.transformation || [
-        { quality: "auto" }, // ✅ Auto optimize
-        { fetch_format: "auto" } // ✅ Auto format (WebP support)
+        { quality: "auto" }, 
+        { fetch_format: "auto" }
       ],
       ...options
     };
@@ -50,7 +50,7 @@ const uploadCloudinary = (buffer, options = {}) => {
   });
 };
 
-// ✅ Add delete function
+
 export const deleteFromCloudinary = async (publicId) => {
   try {
     const result = await cloudinary.uploader.destroy(publicId);

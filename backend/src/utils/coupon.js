@@ -21,9 +21,9 @@ export const calculateCouponDiscount = (coupon, bookingAmount) => {
     discountAmount = coupon.discountValue;
   }
 
-  // Never allow discount more than booking amount
+ 
   discountAmount = Math.min(discountAmount, bookingAmount);
 
-  // Round to avoid decimals
+  
   return Math.round(discountAmount);
 };

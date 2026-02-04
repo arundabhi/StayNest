@@ -36,6 +36,6 @@ const chatSchema = new Schema(
     timestamps: true,
   }
 );
-chatSchema.index({ userId: 1, hotelId: 1, createdAt: -1 }); // ✅ Chat history
+chatSchema.index({ userId: 1, hotelId: 1, createdAt: -1 }); 
 
 export const Chat = mongoose.model("Chat", chatSchema);
