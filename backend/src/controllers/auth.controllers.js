@@ -84,12 +84,22 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
 
     if (!email || !password) {
       return res.status(400).json({
         success: false,
         message: "Missing credentials",
+      });
+    }
+
+    try {
+      email = validateEmail(email);
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message,
       });
     }
 
@@ -102,17 +112,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const accessToken = jwt.sign(
-      { id: user._id },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: process.env.ACCESS_TOKEN_EXPIRES }
-    );
-
-    const refreshToken = jwt.sign(
-      { id: user._id },
-      process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: process.env.REFRESH_TOKEN_EXPIRES }
-    );
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user);
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -213,7 +213,16 @@ export const refreshAccessToken = async (req, res) => {
 
 export const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    let { email } = req.body;
+    try {
+      email = validateEmail(email);
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message,
+      });
+    }
+
 
     if (!email) {
       return res.status(400).json({

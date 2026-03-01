@@ -14,7 +14,7 @@ import transporter from "../utils/sendEmail.utils.js";
 export const createBooking = async (req, res) => {
   const session = await mongoose.startSession();
 
-  try {
+  try { 
     session.startTransaction();
 
     const {
@@ -22,7 +22,6 @@ export const createBooking = async (req, res) => {
       checkOut,
       totalGuest,
       paymentMode,
-      useSpecialOffer,
       couponCode: couponCodeFromClient,
     } = req.body;
 
@@ -1301,11 +1300,11 @@ export const autoCompleteBooking = async () => {
     const bookingsToComplete = await Booking.find({
       status: "booked",
       checkOut: { $lt: now },
-      paymentStatus: { $in: ["paid", "cod"] }, 
+      paymentStatus: { $in: ["success"] }, 
     });
 
     if (bookingsToComplete.length === 0) {
-      console.log("ℹ️ No bookings to auto-complete");
+      console.log(" No bookings to auto-complete");
       return;
     }
 
@@ -1322,9 +1321,9 @@ export const autoCompleteBooking = async () => {
     );
 
     console.log(
-      `✅ Auto-completed ${result.modifiedCount} booking(s)`
+      ` Auto-completed ${result.modifiedCount} booking(s)`
     );
   } catch (error) {
-    console.error("❌ Auto-complete booking error:", error);
+    console.error("Auto-complete booking error:", error);
   }
 };

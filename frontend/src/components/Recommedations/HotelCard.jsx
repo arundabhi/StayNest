@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Star, MapPin, Heart, Sparkles, ArrowRight } from "lucide-react";
+import { Star, MapPin, Heart, Sparkles, ArrowRight, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -11,10 +11,13 @@ const HotelCard = ({ hotel }) => {
   const [isWished, setIsWished] = useState(false);
   const [wishLoading, setWishLoading] = useState(false);
 
+  // --- NEW STATE FOR FESTIVAL PRICING ---
+  const [festivalOffer, setFestivalOffer] = useState(null);
+
   const hasOffer = !!hotel.offer;
   const savingAmount = hasOffer ? hotel.offer.originalPrice - hotel.offer.offerPrice : 0;
 
-  /* 1. Check if hotel is already wishlisted on component mount */
+  /* 1. Check wishlist status (Existing) */
   useEffect(() => {
     if (!token || !hotel) return;
     const checkWishlistStatus = async () => {
@@ -31,23 +34,34 @@ const HotelCard = ({ hotel }) => {
     checkWishlistStatus();
   }, [hotel._id, token]);
 
-  /* 2. Handle the Toggle action */
-  const handleWishlistToggle = async (e) => {
-    e.stopPropagation(); // Prevents navigating to hotel details
-    if (!token) return toast.error("Please login to save hotels");
+  /* 2. NEW: Fetch Festival Pricing / Holi Offer */
+  useEffect(() => {
+    const fetchFestivalPricing = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/pricing/${hotel._id}`);
+        if (res.data.success && res.data.pricing) {
+          setFestivalOffer(res.data.pricing);
+        }
+      } catch (err) {
+        // Silent catch: hotel simply has no festival pricing
+      }
+    };
+    fetchFestivalPricing();
+  }, [hotel._id]);
 
+  /* 3. Handle Toggle action (Existing) */
+  const handleWishlistToggle = async (e) => {
+    e.stopPropagation();
+    if (!token) return toast.error("Please login to save hotels");
     try {
       setWishLoading(true);
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
-        { hotelId: hotel._id }, // Sending hotelId in req.body
+        { hotelId: hotel._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setIsWished(res.data.wished);
-      toast.success(res.data.message, {
-        icon: res.data.wished ? '❤️' : '💔',
-      });
+      toast.success(res.data.message, { icon: res.data.wished ? '❤️' : '💔' });
     } catch (error) {
       toast.error(error.message || "Failed to update wishlist");
     } finally {
@@ -60,8 +74,22 @@ const HotelCard = ({ hotel }) => {
       className="group bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 overflow-hidden relative cursor-pointer"
       onClick={() => navigate(`/hotels/${hotel._id}`)}
     >
-      {/* OFFER BADGE */}
-      {hasOffer && (
+      {/* 🟢 NEW FESTIVAL BADGE (e.g., Holi Offer) */}
+      {festivalOffer && (
+        <div className="absolute top-4 left-4 z-30 flex flex-col gap-1">
+          <div className="bg-orange-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1 uppercase tracking-widest animate-bounce">
+            <Gift size={12} /> {festivalOffer.name} Offer
+          </div>
+          {festivalOffer.multiplier < 1 && (
+            <div className="bg-white/90 backdrop-blur-md text-orange-700 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-100 flex items-center gap-1">
+               Special Pricing Active
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* EXISTING OFFER BADGE (Untouched) */}
+      {hasOffer && !festivalOffer && (
         <div className="absolute top-4 left-4 z-20 flex flex-col gap-1">
           <div className="bg-rose-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg shadow-rose-200 uppercase tracking-widest">
             {hotel.offer.discountPercent}% OFF
@@ -72,7 +100,7 @@ const HotelCard = ({ hotel }) => {
         </div>
       )}
 
-      {/* ❤️ UPDATED WISHLIST BUTTON */}
+      {/* ❤️ WISHLIST BUTTON (Existing) */}
       <button 
         onClick={handleWishlistToggle}
         disabled={wishLoading}
@@ -85,7 +113,7 @@ const HotelCard = ({ hotel }) => {
         <Heart size={18} fill={isWished ? "currentColor" : "none"} />
       </button>
 
-      {/* IMAGE SECTION */}
+      {/* IMAGE SECTION (Existing) */}
       <div className="relative h-52 overflow-hidden">
         <img
           src={hotel.images?.[0] || "/hotel-placeholder.jpg"}
@@ -95,7 +123,7 @@ const HotelCard = ({ hotel }) => {
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
       </div>
 
-      {/* CONTENT SECTION */}
+      {/* CONTENT SECTION (Existing) */}
       <div className="p-6">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
@@ -112,7 +140,7 @@ const HotelCard = ({ hotel }) => {
           {hotel.city}
         </div>
 
-        {/* MATCH SCORE */}
+        {/* MATCH SCORE (Existing) */}
         {hotel.matchScore !== undefined && (
           <div className="bg-blue-50/50 rounded-2xl p-3 border border-blue-100/50 mb-4">
             <div className="flex justify-between items-center mb-1.5">
@@ -127,18 +155,26 @@ const HotelCard = ({ hotel }) => {
                 style={{ width: `${hotel.matchScore}%` }}
               />
             </div>
-            {hotel.reason && (
-              <p className="text-[11px] text-blue-800 font-medium mt-2 leading-tight">
-                “{hotel.reason}”
-              </p>
-            )}
           </div>
         )}
 
         {/* PRICE & ACTION */}
         <div className="flex justify-between items-center pt-2 mt-auto">
           <div className="space-y-0.5">
-            {hasOffer ? (
+            {/* Logic: Priority given to Festival Offer Multiplier, then Standard Offer, then Base Price */}
+            {festivalOffer ? (
+              <>
+                <p className="text-xs text-gray-400 line-through font-bold">
+                  ₹{hotel.basePrice.toLocaleString()}
+                </p>
+                <div className="flex items-baseline gap-1">
+                   <p className="text-2xl font-black text-orange-600">
+                     ₹{(hotel.basePrice * festivalOffer.multiplier).toLocaleString()}
+                   </p>
+                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">/ night</span>
+                </div>
+              </>
+            ) : hasOffer ? (
               <>
                 <p className="text-xs text-gray-400 line-through font-bold">
                   ₹{hotel.offer.originalPrice.toLocaleString()}
@@ -161,9 +197,9 @@ const HotelCard = ({ hotel }) => {
           </div>
 
           <button
-            className="p-3 bg-gray-900 text-white rounded-2xl hover:bg-blue-600 transition-colors shadow-lg shadow-gray-200 group/btn"
+            className={`p-3 rounded-2xl transition-colors shadow-lg group/btn ${festivalOffer ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-900 hover:bg-blue-600'}`}
           >
-            <ArrowRight size={20} className="group-hover/btn:translate-x-1 transition-transform" />
+            <ArrowRight size={20} className="text-white group-hover/btn:translate-x-1 transition-transform" />
           </button>
         </div>
       </div>

@@ -69,7 +69,8 @@ const redirect = params.get("redirect")
 
       navigate(redirect);
     } catch (err) {
-      setError(err?.message || "Login failed");
+      
+      setError(err.response?.data?.message);
     } finally {
       setLoading(false);
     }
@@ -151,7 +152,7 @@ const redirect = params.get("redirect")
     // back to login after success
     switchMode("login");
   } catch (err) {
-    setError(err?.data?.message || "Password reset failed");
+    setError(err.response?.data?.message || "Password reset failed");
   } finally {
     setLoading(false);
   }

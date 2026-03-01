@@ -2,6 +2,7 @@ import express from "express";
 import { confirmRazorpayBooking, createRazorpayOrder, getHotelPayments, getMyPayments, paymentOnCOD, paymentOnStripe, verifyRazorpayPayment, verifyStripePayment } from "../controllers/payment.controllers.js";
 import { protect } from "../middelwares/auth.js";
 import { authorizeRoles } from "../middelwares/role.js";
+import { paymentLimiter } from "../middelwares/rateLimiter.js";
 
 
 
@@ -10,6 +11,7 @@ const paymentRouter2 = express.Router()
 paymentRouter2.post(
   "/cod/:bookingId",
   protect,
+  paymentLimiter,
   paymentOnCOD
 );
 
@@ -17,6 +19,7 @@ paymentRouter2.post(
 paymentRouter2.get(
   "/stripe/verify",
   protect,
+
   verifyStripePayment
 );
 
@@ -29,6 +32,7 @@ paymentRouter2.post(
 paymentRouter2.post(
   "/stripe/:bookingId",
   protect,
+  paymentLimiter,
   paymentOnStripe
 );
 
@@ -37,6 +41,7 @@ paymentRouter2.post(
 paymentRouter2.post(
   "/razorpay/:bookingId",
   protect,
+  paymentLimiter,
   createRazorpayOrder
 );
 paymentRouter2.patch(

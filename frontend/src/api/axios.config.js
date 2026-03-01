@@ -20,35 +20,33 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Access token expired
+    // ⛔ Don't refresh on login/register
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/auth/login")
     ) {
       originalRequest._retry = true;
 
       try {
-        // 🔁 CALL REFRESH API
         const res = await api.post("/auth/refresh");
 
-        // ✅ SAVE NEW ACCESS TOKEN
         localStorage.setItem("accessToken", res.data.accessToken);
 
-        // 🔁 RETRY ORIGINAL REQUEST
         originalRequest.headers.Authorization =
           `Bearer ${res.data.accessToken}`;
 
         return api(originalRequest);
-      } catch (err)  {
+      } catch (err) {
         localStorage.removeItem("accessToken");
 
-        // 🔥 PREVENT LOOP
         const currentPath = window.location.pathname;
 
         if (currentPath !== "/auth") {
           window.location.href =
             `/auth?redirect=${encodeURIComponent(currentPath)}`;
         }
+
         return Promise.reject(err);
       }
     }
@@ -56,5 +54,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 export default api;

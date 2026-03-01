@@ -16,11 +16,12 @@ import {
 } from "../controllers/booking.controllers.js";
 import { protect } from "../middelwares/auth.js";
 import { authorizeRoles } from "../middelwares/role.js";
+import { emailLimiter } from "../middelwares/rateLimiter.js";
 
 const bookingRouter = express.Router();
 
 
-bookingRouter.post("/:hotelId/:roomId",protect,createBooking);
+bookingRouter.post("/:hotelId/:roomId",protect,emailLimiter,createBooking);
 bookingRouter.patch('/confirm/:bookingId',protect,confirmBooking)
 bookingRouter.patch("/cancel/:bookingId",protect, cancelBooking);
 bookingRouter.get("/my",protect, getAllBookings);

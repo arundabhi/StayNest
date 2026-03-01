@@ -21,7 +21,7 @@ export const calculateDynamicPrice = async ({
       startDate: { $lte: endDate },
       endDate: { $gte: startDate },
     }).sort({ multiplier: -1 });
-
+  
     if (pricingRule) {
       seasonMultiplier = pricingRule.multiplier;
     }

@@ -11,15 +11,16 @@ import {
 
 import { protect } from "../middelwares/auth.js";
 import upload from "../middelwares/multer.js";
+import { authLimiter, emailLimiter } from "../middelwares/rateLimiter.js";
 
 const authRouter = express.Router();
 
 authRouter.post("/register", upload.single("profileImage"), registerUser);
-authRouter.post("/login", loginUser);
+authRouter.post("/login",authLimiter, loginUser);
 authRouter.post("/logout", protect, logoutUser);
 authRouter.post("/refresh-token", refreshAccessToken);
 authRouter.post("/owner/login", ownerLogin);
-authRouter.post("/forgot-password", forgotPassword);
+authRouter.post("/forgot-password",emailLimiter, forgotPassword);
 authRouter.post("/reset-password", resetPassword);
 
 export default authRouter;

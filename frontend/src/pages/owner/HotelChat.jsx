@@ -61,6 +61,7 @@ const OwnerChatCenter = () => {
       setLoading(true);
       const res = await api.get(`/chats/${hotelId}`);
       setMessages(res.data.messages || []);
+      console.log("Fetched Messages:", res.data.messages);
     } catch {
       toast.error("Failed to load chats");
     } finally {
@@ -69,24 +70,42 @@ const OwnerChatCenter = () => {
   };
 
   const connectSSE = (uid) => {
-    if (sseRef.current) return;
-    const es = new EventSource(`${import.meta.env.VITE_API_URL}/chats/sse/${uid}`);
-    es.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "new-message") {
-        setMessages((prev) => [...prev, data.chat]);
-      }
-    };
-    es.onerror = () => {
-      sseRef.current = null;
-      setTimeout(() => connectSSE(uid), 3000);
-    };
-    sseRef.current = es;
+  if (sseRef.current) return;
+
+  const es = new EventSource(
+    `${import.meta.env.VITE_API_URL}/chats/sse/${uid}`
+  );
+
+  es.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === "new-message") {
+      setMessages((prev) => [...prev, data.chat]);
+    }
+
+    // 🔥 ADD THIS
+    if (data.type === "seen") {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.sender === "hotel"
+            ? { ...m, status: "seen" }
+            : m
+        )
+      );
+    }
   };
+
+  es.onerror = () => {
+    sseRef.current = null;
+    setTimeout(() => connectSSE(uid), 3000);
+  };
+
+  sseRef.current = es;
+};
 
   const markSeen = async () => {
     try {
-      await api.patch(`/chat/seen/${hotelId}`);
+      await api.patch(`/chats/seen/${hotelId}`);
     } catch {
       console.warn("Seen sync failed");
     }
@@ -134,7 +153,10 @@ const OwnerChatCenter = () => {
     .filter(([_, c]) => c.user?.name?.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => new Date(b[1].time) - new Date(a[1].time));
 
-  const activeMessages = messages.filter((m) => (m.userId?._id || m.userId) === activeUserId);
+  const activeMessages = messages.filter((m) => {
+  const uid = m.userId?._id || m.userId;
+  return uid?.toString() === activeUserId?.toString();
+});
   const activeUser = conversations[activeUserId]?.user;
 
   return (

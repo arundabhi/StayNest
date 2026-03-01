@@ -42,7 +42,7 @@ const HotelChat = () => {
 
       if (res.data.success) {
         setMessages(res.data.messages || []);
-        setHotelInfo(res.data.hotel || { name: "Hotel Concierge" });
+        setHotelInfo(res.data.hotelData || { name: "Hotel Concierge" });
 
         // mark seen if hotel messages exist
         if (res.data.messages.some(m => m.sender === "hotel" && m.status !== "seen")) {
@@ -79,7 +79,7 @@ const HotelChat = () => {
         });
 
         if (data.chat.sender === "hotel") {
-          api.patch(`/chat/seen/${hotelId}`);
+          api.patch(`/chats/seen/${hotelId}`);
         }
       }
 
@@ -117,21 +117,25 @@ const HotelChat = () => {
      5️⃣ SEND MESSAGE
   ───────────────────────────── */
   const handleSend = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+  e.preventDefault();
+  if (!inputValue.trim()) return;
 
-    const messageText = inputValue;
-    setInputValue("");
+  const messageText = inputValue;
+  setInputValue("");
 
-    try {
-      await api.post(`/chats/${hotelId}`, {
-        message: messageText,
-        sender: "user",
-      });
-    } catch {
-      toast.error("Message failed to send");
-    }
-  };
+  try {
+    const res = await api.post(`/chats/${hotelId}`, {
+      message: messageText,
+      sender: "user",
+    });
+
+    // 🔥 ADD THIS
+    setMessages(prev => [...prev, res.data.chat]);
+
+  } catch {
+    toast.error("Message failed to send");
+  }
+};
 
   /* ─────────────────────────────
      UI

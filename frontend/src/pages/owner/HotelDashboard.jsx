@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, BarChart, Bar 
@@ -6,11 +6,11 @@ import {
 import { 
   TrendingUp, Users, Calendar, IndianRupee, Star, 
   LayoutDashboard, Download, Wallet, BedDouble, 
-  MessageSquare, CheckCircle2, XCircle, Clock, ChevronRight
+  MessageSquare, CheckCircle2, XCircle, Clock, ChevronRight,Quote
 } from "lucide-react";
 import api from "../../api/axios.config";
 import toast from "react-hot-toast";
-import {  useNavigate } from "react-router-dom";
+import {  useLocation, useNavigate } from "react-router-dom";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
@@ -30,6 +30,98 @@ const navigate = useNavigate()
   useEffect(() => {
     fetchAllAnalytics();
   }, []);
+
+  const sseRef = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    let ownerId;
+
+    const connectSSE = async () => {
+      try {
+        const res = await api.get("/users/me");
+        ownerId = res.data.user._id;
+
+        if (sseRef.current) return; // prevent duplicate connections
+
+        const es = new EventSource(
+          `${import.meta.env.VITE_API_URL}/chats/sse/${ownerId}`
+        );
+
+        es.onopen = () => {
+          console.log("🟢 SSE Connected");
+        };
+
+        es.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+
+          if (data.type === "new-message") {
+            const chat = data.chat;
+
+            // Only notify for user messages
+            if (chat.sender !== "user") return;
+
+            // Don't show popup if already in chat page
+            if (location.pathname.includes("/owner/hotel/chat")) return;
+
+            // 🔊 Play notification sound
+            const audio = new Audio("/notification.mp3");
+            audio.play().catch(() => {});
+
+            // 🔥 Professional clickable toast
+            toast(
+              (t) => (
+                <div
+                  onClick={() => {
+                    navigate(`/owner/chat/${chat.hotelId}`);
+                    toast.dismiss(t.id);
+                  }}
+                  className="cursor-pointer"
+                >
+                  <p className="font-bold">
+                    📩 {chat.userId?.name || "Guest"}
+                  </p>
+                  <p className="text-sm opacity-80 truncate max-w-xs">
+                    {chat.message}
+                  </p>
+                </div>
+              ),
+              {
+                duration: 5000,
+                style: {
+                  borderRadius: "12px",
+                  background: "#111",
+                  color: "#fff",
+                },
+              }
+            );
+          }
+        };
+
+        es.onerror = () => {
+          console.log("🔴 SSE Disconnected. Reconnecting...");
+          es.close();
+          sseRef.current = null;
+
+          setTimeout(connectSSE, 3000); 
+        };
+
+        sseRef.current = es;
+      } catch (error) {
+        console.error("SSE setup failed:", error);
+      }
+    };
+
+    connectSSE();
+
+    return () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+    };
+  }, [navigate, location]);
+
 
   const fetchAllAnalytics = async () => {
     try {
@@ -290,51 +382,129 @@ const navigate = useNavigate()
         </div>
 
         {/* 4. GUESTS & REVIEWS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-            <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2 tracking-tight">
-              <Users size={20} className="text-blue-600" /> Top Value Guests
-            </h3>
-            <div className="space-y-4">
-              {guestAnalytics?.topGuests.map((g, i) => (
-                <div key={i} className="flex items-center justify-between pb-4 border-b border-slate-50 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm uppercase">
-                      {g.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">{g.name}</p>
-                      <p className="text-[10px] text-slate-500 font-bold">{g.bookings} Stays</p>
-                    </div>
-                  </div>
-                  <p className="font-black text-slate-700 text-sm">₹{g.totalSpent.toLocaleString()}</p>
-                </div>
-              ))}
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  {/* Top Value Guests Card */}
+  <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 flex flex-col">
+    <div className="flex items-center justify-between mb-8">
+      <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 tracking-tight">
+        <Users size={20} className="text-indigo-600" /> Top Value Guests
+      </h3>
+      <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">
+        Live Data
+      </span>
+    </div>
+
+    {/* Mini Stats Bar */}
+    <div className="grid grid-cols-3 gap-2 mb-8 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+      <div className="text-center">
+        <p className="text-[10px] uppercase text-slate-400 font-bold">Total</p>
+        <p className="text-sm font-black text-slate-800">{guestAnalytics?.totalGuests || 0}</p>
+      </div>
+      <div className="text-center border-x border-slate-200">
+        <p className="text-[10px] uppercase text-slate-400 font-bold">Repeats</p>
+        <p className="text-sm font-black text-slate-800">{guestAnalytics?.repeatGuests || 0}</p>
+      </div>
+      <div className="text-center">
+        <p className="text-[10px] uppercase text-slate-400 font-bold">Rate</p>
+        <p className="text-sm font-black text-emerald-600">
+          {guestAnalytics?.repeatRate ? `${(guestAnalytics.repeatRate)}` : '0%'}
+        </p>
+      </div>
+    </div>
+
+    <div className="space-y-5">
+      {guestAnalytics?.topGuests.map((g, i) => (
+        <div key={i} className="flex items-center justify-between group cursor-default">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase shadow-md group-hover:scale-110 transition-transform">
+                {g.name.charAt(0)}
+              </div>
+              {i === 0 && <div className="absolute -top-1 -right-1 bg-amber-400 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px]">👑</div>}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{g.name}</p>
+              <p className="text-[10px] text-slate-400 font-medium">{g.bookings} Stays Completed</p>
             </div>
           </div>
-
-          <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-            <h3 className="text-lg font-black text-slate-900 mb-6 tracking-tight">Recent Guest Feedback</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reviewAnalytics?.recentReviews.map((r) => (
-                <div key={r._id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 relative">
-                  <div className="flex gap-0.5 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={12} className={i < r.rating ? "text-amber-400 fill-amber-400" : "text-slate-300"} />
-                    ))}
-                  </div>
-                  <p className="text-slate-600 text-xs italic line-clamp-3 mb-4">"{r.message || "No comment provided"}"</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[8px] font-black uppercase">
-                      {r.userId?.name?.charAt(0)}
-                    </div>
-                    <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{r.userId?.name}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="text-right">
+            <p className="font-bold text-slate-900 text-sm">₹{g.totalSpent.toLocaleString()}</p>
           </div>
         </div>
+      ))}
+    </div>
+  </div>
+
+  {/* Recent Feedback Card */}
+  <div className="lg:col-span-2 bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100">
+    <div className="flex items-center justify-between mb-8">
+      <h3 className="text-lg font-bold text-slate-900 tracking-tight">Recent Guest Feedback</h3>
+      <button className="text-xs font-bold text-indigo-600 hover:underline">View All Reviews</button>
+    </div>
+    
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {reviewAnalytics?.recentReviews?.length > 0 ? (
+    reviewAnalytics.recentReviews.map((r) => (
+      <div
+        key={r._id}
+        className="p-6 bg-white rounded-2xl border border-slate-100 hover:border-indigo-100 hover:shadow-md transition-all duration-300 relative overflow-hidden group"
+      >
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <Quote size={40} className="text-slate-900" />
+        </div>
+
+        <div className="flex gap-1 mb-3">
+          {[...Array(5)].map((_, i) => (
+            <Star
+              key={i}
+              size={14}
+              className={
+                i < r.rating
+                  ? "text-amber-400 fill-amber-400"
+                  : "text-slate-200"
+              }
+            />
+          ))}
+        </div>
+
+        <p className="text-slate-600 text-sm leading-relaxed mb-6 relative z-10">
+          "{r.message ||
+            "The guest didn't leave a written comment, but gave a high rating."}"
+        </p>
+
+        <div className="flex items-center gap-3 mt-auto">
+          <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black uppercase border border-indigo-100">
+            {r.userId?.name?.charAt(0) || "?"}
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">
+              {r.userId?.name || "Guest"}
+            </p>
+            <p className="text-[9px] text-slate-400 font-bold uppercase">
+              Verified Stay
+            </p>
+          </div>
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+      <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+        <Quote size={28} className="text-indigo-500" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-800">
+        No reviews yet
+      </h3>
+      <p className="text-sm text-slate-500 mt-1 max-w-sm">
+        Guests haven’t left feedback for this property yet. Once they do,
+        it’ll appear here.
+      </p>
+    </div>
+  )}
+</div>
+
+  </div>
+</div>
 
       </div>
     </div>

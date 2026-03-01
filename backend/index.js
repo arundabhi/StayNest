@@ -8,7 +8,7 @@ import cookieParser from "cookie-parser";
 import './src/api/cron/cleanup.js'
 import connectDb from "./src/db/index.js";
 
-
+import cronRoutes from "./src/routes/crons.routes.js";
 import userRouter from "./src/routes/user.routes.js";
 import adminRouter from "./src/routes/admin.routes.js";
 import authRouter from "./src/routes/auth.routes.js";
@@ -25,6 +25,7 @@ import recommendationRoutes from "./src/routes/recommendation.routes.js";
 import analyticRouter from "./src/routes/analytic.routes.js";
 import availabilityRouter from "./src/routes/availability.routes.js";
 import { apiLimiter } from "./src/middelwares/rateLimiter.js";
+import pricingRouter from "./src/routes/pricing.routes.js";
 
 
 dotenv.config({ path: "./.env" });
@@ -55,7 +56,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api/v1", apiLimiter);
 
-
+app.use("/api/v1", cronRoutes);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/auth", authRouter);
@@ -71,6 +72,7 @@ app.use("/api/v1/coupons", couponRouter);
 app.use("/api/v1/recommendations", recommendationRoutes);
 app.use("/api/v1/analytics", analyticRouter);
 app.use("/api/v1/availability", availabilityRouter);
+app.use("/api/v1/pricing", pricingRouter);
 
 app.get("/", (req, res) => {
   res.send("API running");

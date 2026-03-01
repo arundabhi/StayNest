@@ -33,38 +33,38 @@ export const sendMessage = async (req, res) => {
   try {
     const senderId = req.userId;
     const { hotelId } = req.params;
-    const { message, sender } = req.body;
-
-    if (!senderId) {
-      return res.status(401).json({ success: false, message: "Not authorized" });
-    }
+    const { message, sender, recipientId } = req.body;
 
     if (!hotelId || !message || !sender) {
-      return res.status(400).json({
-        success: false,
-        message: "hotelId, message and sender are required",
-      });
+      return res.status(400).json({ message: "Missing fields" });
     }
 
-  
     const hotel = await Hotel.findById(hotelId);
     if (!hotel) {
-      return res.status(404).json({ success: false, message: "Hotel not found" });
+      return res.status(404).json({ message: "Hotel not found" });
+    }
+
+    let guestId;
+
+    if (sender === "user") {
+      guestId = senderId;
+    } else {
+      guestId = recipientId;
     }
 
     const chat = await Chat.create({
-      userId: senderId,
       hotelId,
+      userId: guestId,
       sender,
       message,
-      status: "sent",
+      status: "sent"
     });
 
-
+    // decide who receives SSE
     const receiverId =
       sender === "user"
-        ? hotel.owner.toString() 
-        : senderId;             
+        ? hotel.owner.toString()
+        : guestId;
 
     if (connections[receiverId]) {
       connections[receiverId].forEach(stream => {
@@ -74,62 +74,51 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    return res.status(201).json({
-      success: true,
-      message: "Message sent",
-      chat,
-    });
+    res.status(201).json({ success: true, chat });
 
-  } catch (error) {
-    console.error("send message error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 
-
 export const getChatMessages = async (req, res) => {
   try {
-    const userId = req.userId;
     const { hotelId } = req.params;
+    const userId = req.userId;
 
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Not authorized" });
+    const hotel = await Hotel.findById(hotelId);
+
+    if (!hotel) {
+      return res.status(404).json({ message: "Hotel not found" });
     }
 
-    const page = Number(req.query.page) || 1;
-    const limit = 20;
-    const skip = (page - 1) * limit;
+    let query;
 
-    const [messages, totalMessages] = await Promise.all([
-      Chat.find({ userId, hotelId })
-        .sort({ createdAt: 1 })
-        .skip(skip)
-        .limit(limit).populate("userId", "name email").populate("hotelId",'name city'),
+    // If logged in user is owner
+    if (hotel.owner.toString() === userId.toString()) {
+      query = { hotelId }; // get ALL chats
+    } else {
+      // guest side
+      query = { hotelId, userId };
+    }
 
-      Chat.countDocuments({ userId, hotelId }),
-    ]);
+    const messages = await Chat.find(query)
+      .sort({ createdAt: 1 })
+      .populate("userId", "name email")
+      .populate("hotelId", "name city");
 
-    const hotelInfo = messages.length > 0 ? messages[0].hotelId : null
-
-
+      const hotelData = messages.length > 0
+  ? messages[0].hotelId
+  : await Hotel.findById(req.params.hotelId).select("name city");
 
     return res.status(200).json({
       success: true,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(totalMessages / limit),
-        totalMessages,
-      },
-      hotel:hotelInfo,
-      messages 
+      messages,
+      hotelData
     });
 
   } catch (error) {
-    console.error("get chat error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -140,32 +129,55 @@ export const getChatMessages = async (req, res) => {
 
 export const markMessagesAsSeen = async (req, res) => {
   try {
-    const userId = req.userId;
+    const loggedInUserId = req.userId;
+    console.log("🔥 markMessagesAsSeen called by:", loggedInUserId);
+    
     const { hotelId } = req.params;
 
-    await Chat.updateMany(
-      { userId, hotelId, sender: "hotel", status: { $ne: "seen" } },
-      { $set: { status: "seen" } }
-    );
+    const hotel = await Hotel.findById(hotelId);
+    
 
-    if (connections[userId]) {
-      connections[userId].forEach(stream => {
-        stream.write(
-          `data: ${JSON.stringify({ type: "seen" })}\n\n`
-        );
-      });
+    let query;
+    let notifyUsers = [];
+
+    if (hotel.owner.toString() === loggedInUserId.toString()) {
+      // Owner viewing → mark user messages seen
+      query = { hotelId, sender: "user", status: { $ne: "seen" } };
+
+      // Notify guest
+      const chats = await Chat.find(query);
+      notifyUsers = [...new Set(chats.map(c => c.userId.toString()))];
+
+      console.log("Notify Users:", notifyUsers);
+
+    } else {
+      // Guest viewing → mark hotel messages seen
+      query = {
+        hotelId,
+        userId: loggedInUserId,
+        sender: "hotel",
+        status: { $ne: "seen" }
+      };
+
+      notifyUsers = [hotel.owner.toString()];
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Messages marked as seen",
+    await Chat.updateMany(query, { $set: { status: "seen" } });
+
+    // 🔥 Notify all affected users
+    notifyUsers.forEach(uid => {
+      if (connections[uid]) {
+        connections[uid].forEach(stream => {
+          stream.write(
+            `data: ${JSON.stringify({ type: "seen" })}\n\n`
+          );
+        });
+      }
     });
 
+    return res.json({ success: true });
+
   } catch (error) {
-    console.error("mark seen error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    return res.status(500).json({ message: "Server error" });
   }
 };

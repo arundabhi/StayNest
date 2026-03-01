@@ -27,7 +27,7 @@ const couponSchema = new Schema(
             return true;
             },
             message: "Percentage discount cannot exceed 100"
-        }
+        }                                         
     },
 
     expiryDate: {

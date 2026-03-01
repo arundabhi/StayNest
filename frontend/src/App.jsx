@@ -19,9 +19,8 @@ import WishlistPage from "./pages/WishlistPage";
 import HotelChat from "./pages/HotelChat";
 import UserWaitlist from "./pages/UserWaitlist";
 import ListProperty from "./pages/owner/ListProperty";
-import MyHotels from "./pages/owner/MyHotels";
-import Dashboard from "./components/Recommedations/Dashboard";
-import AddRoom from "./pages/owner/AddRoom";
+
+
 import HotelDashboard from "./pages/owner/HotelDashboard";
 import AddRoom2 from "./pages/owner/AddRoom2";
 import RoomList from "./pages/owner/ListRoom";
@@ -32,6 +31,7 @@ import RoomSetting from "./pages/owner/RoomSetting";
 import OwnerPayments from "./pages/owner/OwnerPaymnets";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import Pricing from "./pages/owner/Pricing";
 
 
 const App = () => {
@@ -55,21 +55,19 @@ const App = () => {
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/payment-failed" element={<PaymentFailed />} />
         <Route path="/wishlist" element={<WishlistPage />} />
-        <Route path="/hotels/:hotelId/chat" element={<HotelChat />} />
+        <Route path="/hotels/chat/:hotelId" element={<HotelChat />} />
         <Route path="/user/waitlists" element={<UserWaitlist />} />
         <Route path="/list-property" element={<ListProperty />} />
-        <Route path="/my/hotels" element={<MyHotels />} />
-        <Route path="/Dashboard" element={<Dashboard />} />
-        <Route path="/add-rooms/:hotelId" element={<AddRoom />} />
 
         <Route path="/owner/dashboard" element={<HotelDashboard />} />
         <Route path="/owner/add-room" element={<AddRoom2 />} />
         <Route path="/owner/hotel/:hotelId/rooms" element={<RoomList />} />
         <Route path="/owner/bookings" element={<HotelBookings />} />
-        <Route path="/owner/hotel/:hotelId/chat" element={<OwnerHotelChat />} />
+        <Route path="/owner/hotel/chat/:hotelId" element={<OwnerHotelChat />} />
         <Route path="/owner/setting" element={<OwnerHotelSettings />} />
         <Route path="/owner/hotel/:hotelId/room/:roomId/settings" element={<RoomSetting />} />
         <Route path="/owner/payments" element={<OwnerPayments />} />
+        <Route path="/owner/pricing/:hotelId" element={<Pricing />} />
         
       </Route>
 
