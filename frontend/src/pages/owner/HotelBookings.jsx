@@ -23,7 +23,11 @@ const HotelBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
+
+  
 
   useEffect(() => {
     api
@@ -41,13 +45,22 @@ const HotelBookings = () => {
       });
   }, []);
 
-  const fetchBookings = async (id) => {
+  useEffect(() => {
+  setPage(1);
+}, [searchQuery]);
+
+  const fetchBookings = async (id, resetPage = false) => {
     if (!id) return;
     try {
       setLoading(true);
       setHotelId(id);
-      const res = await api.get(`/bookings/hotel/${id}`);
+      
+      const currentPage = resetPage ? 1 : page;
+      if (resetPage) setPage(1);
+   
+      const res = await api.get(`/bookings/hotel/${id}?page=${currentPage}&limit=10&search=${searchQuery}`);
       setBookings(res.data.bookings || []);
+      setTotalPages(res.data.totalPages || 1);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to fetch bookings");
     } finally {
@@ -55,11 +68,22 @@ const HotelBookings = () => {
     }
   };
 
-  const filteredBookings = bookings.filter(
-    (b) =>
-      b.userId?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b._id.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+
+  const paginatedBookings = bookings;
+
+    useEffect(() => {
+  if (hotelId) {
+    fetchBookings(hotelId);
+  }
+}, [page, hotelId, searchQuery]);
+
+
+
+useEffect(() => {
+  if (page > totalPages) {
+    setPage(totalPages || 1);
+  }
+}, [totalPages]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-24 pb-12 px-4 sm:px-8">
@@ -84,7 +108,7 @@ const HotelBookings = () => {
               />
               <select
                 value={hotelId}
-                onChange={(e) => fetchBookings(e.target.value)}
+                onChange={(e) => fetchBookings(e.target.value,true)}
                 className="pl-12 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none appearance-none focus:ring-2 focus:ring-blue-500 shadow-sm min-w-[200px]"
               >
                 {hotels.map((h) => (
@@ -155,8 +179,8 @@ const HotelBookings = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredBookings.length > 0 ? (
-                    filteredBookings.map((b) => (
+                  {paginatedBookings.length > 0 ? (
+                    paginatedBookings.map((b) => (
                       <tr
                         key={b._id}
                         className="group hover:bg-blue-50/30 transition-colors"
@@ -236,6 +260,57 @@ const HotelBookings = () => {
             </div>
           )}
         </div>
+       <div className="flex items-center justify-between mt-6 px-4">
+
+  {/* LEFT INFO */}
+  <p className="text-sm text-slate-500 font-medium">
+   {bookings.length > 0 ? (
+  <>
+    Page {page} of {totalPages}
+  </>
+) : (
+  "No bookings found"
+)}
+  </p>
+
+  {/* RIGHT PAGINATION */}
+  <div className="flex items-center gap-4">
+
+    {/* Prev */}
+    <button
+      onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+      disabled={page === 1}
+      className={`px-4 py-2 rounded-xl font-semibold transition-all
+        ${
+          page === 1
+            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+            : "bg-white border border-slate-200 hover:bg-slate-50 shadow-sm"
+        }`}
+    >
+      ← Prev
+    </button>
+
+    {/* Page */}
+    <div className="px-4 py-2 bg-slate-100 rounded-xl font-bold text-slate-700 shadow-sm">
+      Page {page} / {totalPages || 1}
+    </div>
+
+    {/* Next */}
+    <button
+      onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+     disabled={page >= totalPages}
+      className={`px-4 py-2 rounded-xl font-semibold transition-all
+        ${
+          page === totalPages || totalPages === 0
+            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+            : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+        }`}
+    >
+      Next →
+    </button>
+
+  </div>
+</div>
       </div>
     </div>
   );

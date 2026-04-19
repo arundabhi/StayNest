@@ -349,7 +349,9 @@ export const getMyPayments = async (req, res) => {
 export const getHotelPayments = async (req, res) => {
   try {
     const ownerId = req.userId;
-
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
 
     const hotel = await Hotel.findOne({ owner: ownerId });
     if (!hotel) {
@@ -359,8 +361,11 @@ export const getHotelPayments = async (req, res) => {
       });
     }
 
- 
     const bookingIds = await Booking.find({ hotelId: hotel._id }).distinct("_id");
+
+    const totalPayments = await Payment.countDocuments({
+      bookingId: { $in: bookingIds },
+    });
 
     const payments = await Payment.find({
       bookingId: { $in: bookingIds },
@@ -373,7 +378,9 @@ export const getHotelPayments = async (req, res) => {
           select: "name email",
         },
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip);
 
     return res.status(200).json({
       success: true,
@@ -382,6 +389,11 @@ export const getHotelPayments = async (req, res) => {
         city: hotel.city,
       },
       payments,
+
+      // ✅ SEND THIS
+      currentPage: page,
+      totalPages: Math.ceil(totalPayments / limit),
+      totalPayments,
     });
 
   } catch (error) {

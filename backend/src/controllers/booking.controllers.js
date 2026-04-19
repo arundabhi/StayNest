@@ -774,6 +774,10 @@ export const getAllBookingsForHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
     const user = req.user;
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
 
     if (!hotelId) {
       return res.status(400).json({
@@ -810,15 +814,41 @@ export const getAllBookingsForHotel = async (req, res) => {
       });
     }
 
-    const bookings = await Booking.find({ hotelId })
+    const { search } = req.query;
+    let query = { hotelId };
+
+    if (search) {
+      const users = await User.find({
+        name: { $regex: search, $options: "i" }
+      }).select("_id");
+      const userIds = users.map((u) => u._id);
+
+      query.$or = [
+        { userId: { $in: userIds } },
+      ];
+
+      if (mongoose.Types.ObjectId.isValid(search)) {
+        query.$or.push({ _id: search });
+      }
+    }
+
+    const totalBookings = await Booking.countDocuments(query);
+    const totalPages = Math.ceil(totalBookings / limit);
+
+    const bookings = await Booking.find(query)
       .populate("userId", "name email")
       .populate("roomId", "title roomType pricePerDay")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip);
 
     return res.status(200).json({
       success: true,
       message: "Hotel bookings fetched successfully",
       count: bookings.length,
+      totalBookings,
+      totalPages,
+      currentPage: page,
       bookings
     });
 

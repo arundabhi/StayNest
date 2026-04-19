@@ -19,25 +19,29 @@ const OwnerPayments = () => {
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+
+
+
+  const fetchPayments = async (pageNo = 1) => {
+  try {
+    setLoading(true);
+    const res = await api.get(`/payment/hotel?page=${pageNo}&limit=10`);
+    
+    if (res.data.success) {
+      setPayments(res.data.payments);
+      setHotel(res.data.hotel);
+    }
+  } catch (err) {
+    toast.error("Failed to load payment history");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
-    fetchPayments();
-  }, []);
-
-  const fetchPayments = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/payment/hotel");
-      if (res.data.success) {
-        setPayments(res.data.payments);
-        setHotel(res.data.hotel);
-      }
-    } catch (err) {
-      toast.error("Failed to load payment history");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchPayments(page);
+  }, [page]);
 
   const filteredPayments = payments.filter(
     (p) =>
@@ -212,6 +216,7 @@ const OwnerPayments = () => {
                 ))}
               </tbody>
             </table>
+      
           </div>
 
           {filteredPayments.length === 0 && (
@@ -228,6 +233,36 @@ const OwnerPayments = () => {
             </div>
           )}
         </div>
+
+        <div className="flex items-center justify-center gap-6 mt-8">
+
+  {/* Prev Button */}
+  <button
+    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+    disabled={page === 1}
+    className={`px-5 py-2 rounded-lg font-medium transition-all duration-200
+      ${page === 1 
+        ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+        : "bg-white border border-gray-300 hover:bg-gray-100 shadow-sm"
+      }`}
+  >
+    ← Prev
+  </button>
+
+  {/* Page Indicator */}
+  <div className="px-4 py-2 bg-gray-100 rounded-lg font-semibold text-gray-700 shadow-sm">
+    Page {page}
+  </div>
+
+  {/* Next Button */}
+  <button
+    onClick={() => setPage((prev) => prev + 1)}
+    className="px-5 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-md"
+  >
+    Next →
+  </button>
+
+</div>
       </div>
     </div>
   );
