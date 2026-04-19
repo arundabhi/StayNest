@@ -17,9 +17,6 @@ const HotelChat = () => {
   const bottomRef = useRef(null);
   const sseRef = useRef(null);
 
-  /* ─────────────────────────────
-     1️⃣ FETCH LOGGED-IN USER
-  ───────────────────────────── */
   const fetchUser = async () => {
     try {
       const res = await api.get("/users/me");
@@ -33,9 +30,6 @@ const HotelChat = () => {
     fetchUser();
   }, []);
 
-  /* ─────────────────────────────
-     2️⃣ LOAD CHAT HISTORY
-  ───────────────────────────── */
   const loadChat = async () => {
     try {
       const res = await api.get(`/chats/${hotelId}`);
@@ -45,7 +39,11 @@ const HotelChat = () => {
         setHotelInfo(res.data.hotelData || { name: "Hotel Concierge" });
 
         // mark seen if hotel messages exist
-        if (res.data.messages.some(m => m.sender === "hotel" && m.status !== "seen")) {
+        if (
+          res.data.messages.some(
+            (m) => m.sender === "hotel" && m.status !== "seen",
+          )
+        ) {
           await api.patch(`/chats/seen/${hotelId}`);
         }
       }
@@ -59,22 +57,19 @@ const HotelChat = () => {
     loadChat();
   }, [hotelId]);
 
-  /* ─────────────────────────────
-     3️⃣ SSE CONNECTION
-  ───────────────────────────── */
   useEffect(() => {
     if (!userId) return;
 
     const es = new EventSource(
-      `${import.meta.env.VITE_API_URL}/chats/sse/${userId}`
+      `${import.meta.env.VITE_API_URL}/chats/sse/${userId}`,
     );
 
     es.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       if (data.type === "new-message") {
-        setMessages(prev => {
-          const exists = prev.some(m => m._id === data.chat._id);
+        setMessages((prev) => {
+          const exists = prev.some((m) => m._id === data.chat._id);
           return exists ? prev : [...prev, data.chat];
         });
 
@@ -84,7 +79,7 @@ const HotelChat = () => {
       }
 
       if (data.type === "seen") {
-        setMessages(prev => prev.map(m => ({ ...m, status: "seen" })));
+        setMessages((prev) => prev.map((m) => ({ ...m, status: "seen" })));
       }
     };
 
@@ -106,44 +101,33 @@ const HotelChat = () => {
     };
   }, [userId, hotelId]);
 
-  /* ─────────────────────────────
-     4️⃣ AUTO SCROLL
-  ───────────────────────────── */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /* ─────────────────────────────
-     5️⃣ SEND MESSAGE
-  ───────────────────────────── */
   const handleSend = async (e) => {
-  e.preventDefault();
-  if (!inputValue.trim()) return;
+    e.preventDefault();
+    if (!inputValue.trim()) return;
 
-  const messageText = inputValue;
-  setInputValue("");
+    const messageText = inputValue;
+    setInputValue("");
 
-  try {
-    const res = await api.post(`/chats/${hotelId}`, {
-      message: messageText,
-      sender: "user",
-    });
+    try {
+      const res = await api.post(`/chats/${hotelId}`, {
+        message: messageText,
+        sender: "user",
+      });
 
-    // 🔥 ADD THIS
-    setMessages(prev => [...prev, res.data.chat]);
+      // 🔥 ADD THIS
+      setMessages((prev) => [...prev, res.data.chat]);
+    } catch {
+      toast.error("Message failed to send");
+    }
+  };
 
-  } catch {
-    toast.error("Message failed to send");
-  }
-};
-
-  /* ─────────────────────────────
-     UI
-  ───────────────────────────── */
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-24 pb-10 flex flex-col items-center">
       <div className="w-full max-w-2xl h-[80vh] flex flex-col bg-white shadow-2xl rounded-[2.5rem] overflow-hidden border">
-
         {/* HEADER */}
         <header className="p-6 border-b flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -154,7 +138,9 @@ const HotelChat = () => {
               {hotelInfo?.name?.charAt(0) || "H"}
             </div>
             <div>
-              <h2 className="font-black">{hotelInfo?.name || "Hotel Concierge"}</h2>
+              <h2 className="font-black">
+                {hotelInfo?.name || "Hotel Concierge"}
+              </h2>
               <p className="text-xs text-emerald-500 font-bold">Online</p>
             </div>
           </div>

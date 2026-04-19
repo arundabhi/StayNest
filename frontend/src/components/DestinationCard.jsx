@@ -19,9 +19,7 @@ const DestinationCard = ({ image, city, hotelCount, rating }) => {
       {/* Content */}
       <div className="p-4">
         <h3 className="text-lg font-semibold">{city}</h3>
-        <p className="text-sm text-gray-500">
-          {hotelCount}+ Hotels
-        </p>
+        <p className="text-sm text-gray-500">{hotelCount}+ Hotels</p>
       </div>
     </div>
   );

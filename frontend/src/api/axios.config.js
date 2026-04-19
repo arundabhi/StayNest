@@ -2,10 +2,9 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true, // 🔥 REQUIRED for refreshToken cookie
+  withCredentials: true,
 });
 
-/* Attach access token */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
   if (token) {
@@ -14,13 +13,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/* Refresh token logic */
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // ⛔ Don't refresh on login/register
+  
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -33,8 +31,7 @@ api.interceptors.response.use(
 
         localStorage.setItem("accessToken", res.data.accessToken);
 
-        originalRequest.headers.Authorization =
-          `Bearer ${res.data.accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${res.data.accessToken}`;
 
         return api(originalRequest);
       } catch (err) {
@@ -43,8 +40,7 @@ api.interceptors.response.use(
         const currentPath = window.location.pathname;
 
         if (currentPath !== "/auth") {
-          window.location.href =
-            `/auth?redirect=${encodeURIComponent(currentPath)}`;
+          window.location.href = `/auth?redirect=${encodeURIComponent(currentPath)}`;
         }
 
         return Promise.reject(err);
@@ -52,8 +48,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
-
 
 export default api;

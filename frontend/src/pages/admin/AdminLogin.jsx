@@ -11,13 +11,13 @@ const AdminLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const res = await api.post("/admin/login", { email, password });
-      
+
       // Store token directly in localStorage
       localStorage.setItem("accessToken", res.data.token);
-      
+
       // Send user to the dashboard
       navigate("/admin/dashboard");
     } catch (err) {
@@ -31,35 +31,43 @@ const AdminLogin = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-100 font-sans">
       <div className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-slate-800">Admin Login</h2>
-          <p className="text-slate-500 mt-2">Enter your credentials to manage the system</p>
+          <h2 className="text-3xl font-extrabold text-slate-800">
+            Admin Login
+          </h2>
+          <p className="text-slate-500 mt-2">
+            Enter your credentials to manage the system
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-            <input 
-              type="email" 
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Email Address
+            </label>
+            <input
+              type="email"
               required
               className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition"
               placeholder="admin@company.com"
-              onChange={(e) => setEmail(e.target.value)} 
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-            <input 
-              type="password" 
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
               required
               className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition"
               placeholder="••••••••"
-              onChange={(e) => setPassword(e.target.value)} 
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 transition shadow-lg disabled:bg-slate-400"
           >

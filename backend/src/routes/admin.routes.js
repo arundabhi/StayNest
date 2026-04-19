@@ -1,7 +1,7 @@
 import express from "express";
 import { adminLogin, approveHotel, createOwner, deleteOwner, getAllHotelsAdmin, getAllOwners, getRegisteredHotels } from "../controllers/admin.controllers.js";
-import { isAdmin } from "../middelwares/admin.js";
-import { protect } from "../middelwares/auth.js";
+import { isAdmin } from "../middlewares/admin.js";
+import { protect } from "../middlewares/auth.js";
 
 
 const adminRouter = express.Router();

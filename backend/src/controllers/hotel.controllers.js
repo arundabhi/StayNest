@@ -35,7 +35,7 @@ export const registerHotel = async (req, res) => {
       });
     }
 
-  
+
     let amenities = req.body.amenities;
     if (!amenities) {
       amenities = [];
@@ -113,11 +113,11 @@ export const updateHotel = async (req, res) => {
     if (amenities && !Array.isArray(amenities)) {
       amenities = [amenities];
     }
-const query = { _id: hotelId };
+    const query = { _id: hotelId };
 
     if (req.user.role !== "admin") {
-  
-      query.owner = req.user.id; 
+
+      query.owner = req.user.id;
     }
     if (
       name === undefined &&
@@ -145,7 +145,7 @@ const query = { _id: hotelId };
       ...(description !== undefined && { description }),
       ...(Array.isArray(amenities) && amenities.length > 0 && { amenities }),
     };
-    
+
     const hotel = await Hotel.findOneAndUpdate(
       query,
       updateData,
@@ -181,7 +181,7 @@ export const deleteHotel = async (req, res) => {
     const query = { _id: hotelId };
 
     if (req.user.role !== "admin") {
-      query.owner = req.user.id; 
+      query.owner = req.user.id;
     }
 
     const hotel = await Hotel.findOneAndDelete(query);
@@ -269,7 +269,7 @@ export const searchHotel = async (req, res) => {
       });
     }
 
- 
+
     const availableHotels = [];
 
     for (const hotel of hotels) {
@@ -355,7 +355,7 @@ export const toggleHotelState = async (req, res) => {
   try {
     const { hotelId } = req.body;
     const query = { _id: hotelId };
-    
+
     if (req.user.role !== "admin") {
       query.owner = req.user.id;
     }
@@ -408,7 +408,7 @@ export const getAllHotels = async (req, res) => {
     return res.status(200).json({ success: true, hotels });
 
   } catch (error) {
-    return res.status(500).json({ success:false, message:"Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -424,16 +424,16 @@ export const getNearbyHotels = async (req, res) => {
             type: "Point",
             coordinates: [longitude, latitude],
           },
-          $maxDistance: 5000, 
+          $maxDistance: 5000,
         },
       },
       isActive: true,
     });
 
-    return res.status(200).json({ success:true, hotels });
+    return res.status(200).json({ success: true, hotels });
 
   } catch (error) {
-    return res.status(500).json({ success:false, message:"Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -452,10 +452,10 @@ export const addHotelImages = async (req, res) => {
       { new: true }
     );
 
-    return res.status(200).json({ success:true, hotel });
+    return res.status(200).json({ success: true, hotel });
 
   } catch (error) {
-    return res.status(500).json({ success:false, message:"Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -483,5 +483,5 @@ export const removeHotelImage = async (req, res) => {
     { new: true }
   );
 
-  res.json({ success:true, hotel });
+  res.json({ success: true, hotel });
 };

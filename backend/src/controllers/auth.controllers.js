@@ -76,7 +76,7 @@ export const registerUser = async (req, res) => {
       refreshToken,
     });
   } catch (error) {
-    console.error("REGISTER ERROR:", error);
+    console.error("REGISTER ERROR DETAILS:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -138,7 +138,7 @@ export const loginUser = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message:error.message,
     });
   }
 };

@@ -29,7 +29,7 @@ const RecommendationLayout = ({
 
         const res = await api.get(
           `${import.meta.env.VITE_API_URL}${endpoint}`,
-          { headers }
+          { headers },
         );
 
         /**
@@ -45,7 +45,7 @@ const RecommendationLayout = ({
         setHotels(finalData);
       } catch (err) {
         setError(
-          err.response?.data?.message || "Failed to load recommendations"
+          err.response?.data?.message || "Failed to load recommendations",
         );
       } finally {
         setLoading(false);

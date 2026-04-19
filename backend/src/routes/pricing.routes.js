@@ -7,8 +7,8 @@ import {
   showDiscountToUser
 } from "../controllers/pricing.controllers.js";
 
-import { protect } from "../middelwares/auth.js";
-import { authorizeRoles } from "../middelwares/role.js";
+import { protect } from "../middlewares/auth.js";
+import { authorizeRoles } from "../middlewares/role.js";
 
 const pricingRouter = express.Router();
 

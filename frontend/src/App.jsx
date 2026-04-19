@@ -20,7 +20,6 @@ import HotelChat from "./pages/HotelChat";
 import UserWaitlist from "./pages/UserWaitlist";
 import ListProperty from "./pages/owner/ListProperty";
 
-
 import HotelDashboard from "./pages/owner/HotelDashboard";
 import AddRoom2 from "./pages/owner/AddRoom2";
 import RoomList from "./pages/owner/ListRoom";
@@ -33,49 +32,53 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Pricing from "./pages/owner/Pricing";
 
-
 const App = () => {
   return (
     <>
       <Toaster position="top-right" reverseOrder={false} />
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/hotels/:hotelId" element={<HotelDetails />} />
-        <Route path="/bookings/:hotelId/:roomId" element={<BookRoom />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/reset-password" element={<AuthPage />} />
-        <Route path="/bookings/my/:bookingId" element={<BookingDetails />} />
-        <Route path="/coupons" element={<Coupons />} />
-        <Route path="/hotels" element={<Hotels />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/bookings" element={<Bookings />} />
-        <Route path="/payment/:bookingId" element={<PaymentPage />} />
-        <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/payment-failed" element={<PaymentFailed />} />
-        <Route path="/wishlist" element={<WishlistPage />} />
-        <Route path="/hotels/chat/:hotelId" element={<HotelChat />} />
-        <Route path="/user/waitlists" element={<UserWaitlist />} />
-        <Route path="/list-property" element={<ListProperty />} />
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/hotels/:hotelId" element={<HotelDetails />} />
+          <Route path="/bookings/:hotelId/:roomId" element={<BookRoom />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/reset-password" element={<AuthPage />} />
+          <Route path="/bookings/my/:bookingId" element={<BookingDetails />} />
+          <Route path="/coupons" element={<Coupons />} />
+          <Route path="/hotels" element={<Hotels />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/bookings" element={<Bookings />} />
+          <Route path="/payment/:bookingId" element={<PaymentPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/hotels/chat/:hotelId" element={<HotelChat />} />
+          <Route path="/user/waitlists" element={<UserWaitlist />} />
+          <Route path="/list-property" element={<ListProperty />} />
 
-        <Route path="/owner/dashboard" element={<HotelDashboard />} />
-        <Route path="/owner/add-room" element={<AddRoom2 />} />
-        <Route path="/owner/hotel/:hotelId/rooms" element={<RoomList />} />
-        <Route path="/owner/bookings" element={<HotelBookings />} />
-        <Route path="/owner/hotel/chat/:hotelId" element={<OwnerHotelChat />} />
-        <Route path="/owner/setting" element={<OwnerHotelSettings />} />
-        <Route path="/owner/hotel/:hotelId/room/:roomId/settings" element={<RoomSetting />} />
-        <Route path="/owner/payments" element={<OwnerPayments />} />
-        <Route path="/owner/pricing/:hotelId" element={<Pricing />} />
-        
-      </Route>
+          <Route path="/owner/dashboard" element={<HotelDashboard />} />
+          <Route path="/owner/add-room" element={<AddRoom2 />} />
+          <Route path="/owner/hotel/:hotelId/rooms" element={<RoomList />} />
+          <Route path="/owner/bookings" element={<HotelBookings />} />
+          <Route
+            path="/owner/hotel/chat/:hotelId"
+            element={<OwnerHotelChat />}
+          />
+          <Route path="/owner/setting" element={<OwnerHotelSettings />} />
+          <Route
+            path="/owner/hotel/:hotelId/room/:roomId/settings"
+            element={<RoomSetting />}
+          />
+          <Route path="/owner/payments" element={<OwnerPayments />} />
+          <Route path="/owner/pricing/:hotelId" element={<Pricing />} />
+        </Route>
 
-      <Route>
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      </Route>
-    </Routes>
+        <Route>
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        </Route>
+      </Routes>
     </>
   );
 };

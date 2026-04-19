@@ -11,7 +11,7 @@ import {
   Camera,
   ChevronRight,
   ShieldCheck,
-  X
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -24,7 +24,10 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
 
   const [form, setForm] = useState({ name: "", mobileNumber: "" });
-  const [passwordForm, setPasswordForm] = useState({ password: "", newPassword: "" });
+  const [passwordForm, setPasswordForm] = useState({
+    password: "",
+    newPassword: "",
+  });
 
   useEffect(() => {
     if (!token) {
@@ -57,9 +60,13 @@ const Profile = () => {
 
   const handleUpdateProfile = async () => {
     try {
-      const res = await api.put(`${import.meta.env.VITE_API_URL}/users/update`, form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.put(
+        `${import.meta.env.VITE_API_URL}/users/update`,
+        form,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setUser(res.data.user);
       setEditing(false);
       toast.success("Profile updated successfully");
@@ -70,9 +77,13 @@ const Profile = () => {
 
   const handleChangePassword = async () => {
     try {
-      await api.put(`${import.meta.env.VITE_API_URL}/users/change-password`, passwordForm, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.put(
+        `${import.meta.env.VITE_API_URL}/users/change-password`,
+        passwordForm,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setPasswordForm({ password: "", newPassword: "" });
       toast.success("Password changed successfully");
     } catch (err) {
@@ -93,27 +104,30 @@ const Profile = () => {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-pulse flex flex-col items-center">
-        <div className="w-20 h-20 bg-gray-200 rounded-full mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-32"></div>
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-20 h-20 bg-gray-200 rounded-full mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-32"></div>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-6 my-10">
-        
         {/* HEADER */}
         <div className="mb-10">
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">Settings</h1>
-          <p className="text-gray-500 mt-2 font-medium">Manage your account details and security preferences.</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+            Settings
+          </h1>
+          <p className="text-gray-500 mt-2 font-medium">
+            Manage your account details and security preferences.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-8">
-          
           {/* 1. BASIC INFORMATION CARD */}
           <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-8">
@@ -128,7 +142,9 @@ const Profile = () => {
                     </button>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {user.name}
+                    </h2>
                     <p className="text-gray-500 font-medium">{user.email}</p>
                     <span className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-100">
                       <ShieldCheck size={12} /> Verified Member
@@ -138,7 +154,9 @@ const Profile = () => {
                 <button
                   onClick={() => setEditing(!editing)}
                   className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                    editing ? "bg-gray-100 text-gray-600" : "bg-blue-600 text-white shadow-lg shadow-blue-100"
+                    editing
+                      ? "bg-gray-100 text-gray-600"
+                      : "bg-blue-600 text-white shadow-lg shadow-blue-100"
                   }`}
                 >
                   {editing ? "Cancel" : "Edit Profile"}
@@ -147,26 +165,40 @@ const Profile = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                    Full Name
+                  </label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <User
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                      size={18}
+                    />
                     <input
                       disabled={!editing}
                       value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
                       className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-semibold text-gray-700 disabled:opacity-60"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
+                  <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                    Phone Number
+                  </label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Phone
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                      size={18}
+                    />
                     <input
                       disabled={!editing}
                       value={form.mobileNumber}
-                      onChange={(e) => setForm({ ...form, mobileNumber: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, mobileNumber: e.target.value })
+                      }
                       placeholder="Enter mobile number"
                       className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-semibold text-gray-700 disabled:opacity-60"
                     />
@@ -193,20 +225,30 @@ const Profile = () => {
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <Lock size={20} className="text-blue-600" /> Security Settings
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <input
                   type="password"
                   placeholder="Current password"
                   value={passwordForm.password}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, password: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      password: e.target.value,
+                    })
+                  }
                   className="w-full px-5 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-semibold"
                 />
                 <input
                   type="password"
                   placeholder="New password"
                   value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      newPassword: e.target.value,
+                    })
+                  }
                   className="w-full px-5 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-semibold"
                 />
               </div>
@@ -225,7 +267,9 @@ const Profile = () => {
             <div className="p-8 flex flex-col md:flex-row justify-between items-center gap-6">
               <div>
                 <h3 className="text-lg font-bold text-rose-900">Danger Zone</h3>
-                <p className="text-rose-600/70 text-sm font-medium">Permanently remove your account and all associated data.</p>
+                <p className="text-rose-600/70 text-sm font-medium">
+                  Permanently remove your account and all associated data.
+                </p>
               </div>
               <button
                 onClick={handleDeleteAccount}
@@ -235,7 +279,6 @@ const Profile = () => {
               </button>
             </div>
           </div>
-
         </div>
       </div>
     </div>

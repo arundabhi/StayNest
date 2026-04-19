@@ -16,9 +16,9 @@ const WishlistToggle = ({ hotelId }) => {
         `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       )
-      .then(res => setIsWished(res.data.wishlisted))
+      .then((res) => setIsWished(res.data.wishlisted))
       .catch(() => {});
   }, [hotelId, token]);
 
@@ -37,15 +37,13 @@ const WishlistToggle = ({ hotelId }) => {
         { hotelId }, // ✅ BODY
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       setIsWished(res.data.wished);
       toast.success(res.data.message);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to update wishlist"
-      );
+      toast.error(error.response?.data?.message || "Failed to update wishlist");
     }
   };
 
@@ -62,6 +60,5 @@ const WishlistToggle = ({ hotelId }) => {
     </button>
   );
 };
-
 
 export default WishlistToggle;

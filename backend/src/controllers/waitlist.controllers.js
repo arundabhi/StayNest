@@ -1,7 +1,7 @@
 import { Booking } from "../models/booking.models.js";
 import { Hotel } from "../models/hotel.models.js";
 import { Room } from "../models/room.models.js";
-import { Waitlist } from "../models/waitlist.model.js";
+import { Waitlist } from "../models/waitlist.models.js";
 
 export const addToWaitlist = async (req, res) => {
   try {

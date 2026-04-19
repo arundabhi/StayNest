@@ -4,10 +4,6 @@ import {  autoCompleteBooking } from "../../controllers/booking.controllers.js";
 
 
 
-
-
-
-
 export default async function handler(req, res) {
   try {
     console.log("✅ Running auto-complete bookings (Vercel)");

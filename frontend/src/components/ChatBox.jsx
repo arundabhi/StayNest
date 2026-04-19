@@ -23,7 +23,8 @@ const ChatBox = ({ messages, hotelName }) => {
     if (!el) return;
 
     const handleScroll = () => {
-      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      const distanceFromBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight;
       // If user is within 150px of bottom, keep auto-scroll on
       shouldAutoScroll.current = distanceFromBottom < 150;
     };
@@ -59,14 +60,17 @@ const ChatBox = ({ messages, hotelName }) => {
       ) : (
         messages.map((msg, index) => {
           const isUser = msg.sender === "user";
-          
+
           // Logic: Show Date Separator
           const prevMsg = messages[index - 1];
-          const showDate = !prevMsg || 
-            new Date(prevMsg.createdAt).toDateString() !== new Date(msg.createdAt).toDateString();
+          const showDate =
+            !prevMsg ||
+            new Date(prevMsg.createdAt).toDateString() !==
+              new Date(msg.createdAt).toDateString();
 
           // Logic: Group messages (don't show "You" or "Hotel" every time)
-          const showLabel = !prevMsg || prevMsg.sender !== msg.sender || showDate;
+          const showLabel =
+            !prevMsg || prevMsg.sender !== msg.sender || showDate;
 
           return (
             <React.Fragment key={msg._id || index}>
@@ -88,7 +92,9 @@ const ChatBox = ({ messages, hotelName }) => {
                   </span>
                 )}
 
-                <div className={`relative flex max-w-[85%] md:max-w-[75%] ${isUser ? "flex-row-reverse" : "flex-row"} gap-2`}>
+                <div
+                  className={`relative flex max-w-[85%] md:max-w-[75%] ${isUser ? "flex-row-reverse" : "flex-row"} gap-2`}
+                >
                   <div
                     className={`px-5 py-3.5 shadow-sm transition-all duration-300 group ${
                       isUser
@@ -105,17 +111,24 @@ const ChatBox = ({ messages, hotelName }) => {
                         isUser ? "text-slate-400" : "text-slate-400"
                       }`}
                     >
-                      {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }) : "sending..."}
+                      {msg.createdAt
+                        ? new Date(msg.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "sending..."}
 
                       {isUser && (
                         <span className="ml-1">
                           {msg.status === "seen" ? (
                             <CheckCheck size={14} className="text-blue-500" />
                           ) : (
-                            <Check size={14} className={msg.status === "sending" ? "animate-pulse" : ""} />
+                            <Check
+                              size={14}
+                              className={
+                                msg.status === "sending" ? "animate-pulse" : ""
+                              }
+                            />
                           )}
                         </span>
                       )}

@@ -13,9 +13,9 @@ import {
   removeHotelImage,
 } from "../controllers/hotel.controllers.js";
 
-import { protect } from "../middelwares/auth.js";
-import { authorizeRoles } from "../middelwares/role.js";
-import upload from "../middelwares/multer.js";
+import { protect } from "../middlewares/auth.js";
+import { authorizeRoles } from "../middlewares/role.js";
+import upload from "../middlewares/multer.js";
 
 const hotelRouter = express.Router();
 

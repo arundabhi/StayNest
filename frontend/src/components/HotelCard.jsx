@@ -5,7 +5,9 @@ import api from "../api/axios.config";
 import toast from "react-hot-toast";
 
 const Badge = ({ children, className = "" }) => (
-  <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded ${className}`}>
+  <span
+    className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded ${className}`}
+  >
     {children}
   </span>
 );
@@ -29,18 +31,20 @@ const HotelCard = ({ hotel }) => {
     if (!token || !hotel._id) return;
     const checkStatus = async () => {
       try {
-        const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotel._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get(
+          `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotel._id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         setIsWishlisted(res.data.wishlisted);
       } catch (err) {
-  if (err.response?.status === 401 || err.response?.status === 403) {
-    // user not logged in → silently ignore
-    return;
-  }
-  console.error("Wishlist check failed", err);
-}
-
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          // user not logged in → silently ignore
+          return;
+        }
+        console.error("Wishlist check failed", err);
+      }
     };
     checkStatus();
   }, [hotel._id, token]);
@@ -59,12 +63,12 @@ const HotelCard = ({ hotel }) => {
       const res = await api.post(
         `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
         { hotelId: hotel._id },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       setIsWishlisted(res.data.wished);
       toast.success(res.data.message, {
-        icon: res.data.wished ? '❤️' : '💔',
+        icon: res.data.wished ? "❤️" : "💔",
       });
     } catch (error) {
       toast.error("Failed to update wishlist");
@@ -75,7 +79,6 @@ const HotelCard = ({ hotel }) => {
 
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 group relative">
-      
       {/* 🖼️ Image Section */}
       <div className="relative h-60 overflow-hidden">
         <img
@@ -99,12 +102,14 @@ const HotelCard = ({ hotel }) => {
 
         {/* 🏷️ Badges */}
         <div className="absolute bottom-3 left-3 flex gap-2">
-            {hotel.popularityScore > 0 && (
+          {hotel.popularityScore > 0 && (
             <Badge className="bg-blue-600 text-white">Popular</Badge>
-            )}
-            {hotel.bookingCount > 0 && (
-            <Badge className="bg-orange-500 text-white">🔥 {hotel.bookingCount} bookings</Badge>
-            )}
+          )}
+          {hotel.bookingCount > 0 && (
+            <Badge className="bg-orange-500 text-white">
+              🔥 {hotel.bookingCount} bookings
+            </Badge>
+          )}
         </div>
 
         {hotel.avgRating > 0 && (
@@ -128,7 +133,9 @@ const HotelCard = ({ hotel }) => {
 
         <div className="flex items-center justify-between mt-4">
           <div>
-            <span className="text-2xl font-bold text-gray-900">₹{hotel.basePrice}</span>
+            <span className="text-2xl font-bold text-gray-900">
+              ₹{hotel.basePrice}
+            </span>
             <span className="text-sm text-gray-500"> / night</span>
           </div>
 

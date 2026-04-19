@@ -21,14 +21,16 @@ const PersonalizedRecommendations = () => {
 
         const res = await api.get(
           `${import.meta.env.VITE_API_URL}/recommendations/personalized`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         if (res.data.success) {
           setHotels(res.data.recommendations);
         }
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to load recommendations");
+        setError(
+          err.response?.data?.message || "Failed to load recommendations",
+        );
       } finally {
         setLoading(false);
       }
@@ -46,13 +48,17 @@ const PersonalizedRecommendations = () => {
       if (!token || !hotelId) return;
       const checkStatus = async () => {
         try {
-          const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const res = await api.get(
+            `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
           setIsWished(res.data.wishlisted);
-        } catch (err) { 
+        } catch (err) {
           console.error(err);
-        toast.error(err.message) }
+          toast.error(err.message);
+        }
       };
       checkStatus();
     }, [hotelId]);
@@ -63,9 +69,10 @@ const PersonalizedRecommendations = () => {
 
       try {
         setWishLoading(true);
-        const res = await api.post(`${import.meta.env.VITE_API_URL}/wishlists/toggle`, 
-          { hotelId }, 
-          { headers: { Authorization: `Bearer ${token}` } }
+        const res = await api.post(
+          `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
+          { hotelId },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setIsWished(res.data.wished);
         toast.success(res.data.message);
@@ -77,16 +84,20 @@ const PersonalizedRecommendations = () => {
     };
 
     return (
-      <button 
+      <button
         onClick={handleToggle}
         disabled={wishLoading}
         className={`absolute top-4 right-4 z-20 p-2.5 rounded-full transition-all border backdrop-blur-md shadow-sm ${
-          isWished 
-            ? "bg-rose-50 border-rose-100 text-rose-500 shadow-rose-100" 
+          isWished
+            ? "bg-rose-50 border-rose-100 text-rose-500 shadow-rose-100"
             : "bg-white/20 border-white/30 text-white hover:bg-white hover:text-rose-500"
         } ${wishLoading ? "opacity-50" : ""}`}
       >
-        <Heart size={20} fill={isWished ? "currentColor" : "none"} className={wishLoading ? "animate-pulse" : ""} />
+        <Heart
+          size={20}
+          fill={isWished ? "currentColor" : "none"}
+          className={wishLoading ? "animate-pulse" : ""}
+        />
       </button>
     );
   };
@@ -112,7 +123,9 @@ const PersonalizedRecommendations = () => {
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="h-8 bg-gray-200 rounded w-1/4 mb-8 animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[1, 2, 3].map((i) => <Skeleton key={i} />)}
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} />
+          ))}
         </div>
       </div>
     );
@@ -142,7 +155,9 @@ const PersonalizedRecommendations = () => {
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">
             Recommended for You
           </h2>
-          <p className="text-gray-500 font-medium">Intelligence-driven picks for your next stay</p>
+          <p className="text-gray-500 font-medium">
+            Intelligence-driven picks for your next stay
+          </p>
         </div>
       </div>
 
@@ -167,7 +182,9 @@ const PersonalizedRecommendations = () => {
               <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full shadow-sm border border-white/50">
                 <div className="flex items-center gap-1 text-amber-500">
                   <Star size={14} fill="currentColor" />
-                  <span className="text-xs font-black text-gray-900">{hotel.avgRating || 0}</span>
+                  <span className="text-xs font-black text-gray-900">
+                    {hotel.avgRating || 0}
+                  </span>
                 </div>
               </div>
             </div>
@@ -188,9 +205,11 @@ const PersonalizedRecommendations = () => {
                   <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
                     <Sparkles size={12} /> Personalized Match
                   </span>
-                  <span className="text-xs font-black text-blue-700">{hotel.matchScore}%</span>
+                  <span className="text-xs font-black text-blue-700">
+                    {hotel.matchScore}%
+                  </span>
                 </div>
-                
+
                 <div className="w-full bg-gray-200/50 rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000"
@@ -208,15 +227,15 @@ const PersonalizedRecommendations = () => {
               {/* PRICE & BUTTON */}
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Starting total</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">
+                    Starting total
+                  </p>
                   <p className="text-2xl font-black text-gray-900 leading-none">
                     ₹{hotel.basePrice.toLocaleString()}
                   </p>
                 </div>
 
-                <button
-                  className="bg-gray-900 text-white p-3 rounded-2xl group-hover:bg-blue-600 transition-all shadow-xl shadow-gray-200 active:scale-95"
-                >
+                <button className="bg-gray-900 text-white p-3 rounded-2xl group-hover:bg-blue-600 transition-all shadow-xl shadow-gray-200 active:scale-95">
                   <ArrowRight size={20} />
                 </button>
               </div>

@@ -11,9 +11,9 @@ import {
   getAvailableCoupons,
 } from "../controllers/coupone.controllers.js";
 
-import { protect } from "../middelwares/auth.js";
-import { authorizeRoles } from "../middelwares/role.js";
-import { isAdmin } from "../middelwares/admin.js";
+import { protect } from "../middlewares/auth.js";
+import { authorizeRoles } from "../middlewares/role.js";
+import { isAdmin } from "../middlewares/admin.js";
 
 const couponRouter = express.Router();
 couponRouter.post(

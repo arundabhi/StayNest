@@ -6,7 +6,7 @@ import {
   markMessagesAsSeen,
 } from "../controllers/chat.controllers.js";
 
-import { protect } from "../middelwares/auth.js";
+import { protect } from "../middlewares/auth.js";
 
 const chatRouter = express.Router();
 

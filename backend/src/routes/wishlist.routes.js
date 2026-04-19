@@ -6,7 +6,7 @@ import {
   removeFromWishlist,
   getWishlistCount,
 } from "../controllers/wishlist.controllers.js";
-import { protect } from "../middelwares/auth.js";
+import { protect } from "../middlewares/auth.js";
 
 const wishlistRouter = express.Router();
 

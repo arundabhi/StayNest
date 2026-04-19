@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/axios.config";
 import toast from "react-hot-toast";
-import {
-  Power,
-  Upload,
-  Trash2,
-  Save,
-  MapPin,
-  IndianRupee
-} from "lucide-react";
+import { Power, Upload, Trash2, Save, MapPin, IndianRupee } from "lucide-react";
 
 const OwnerHotelSettings = () => {
   const [hotel, setHotel] = useState(null);
@@ -55,7 +48,7 @@ const OwnerHotelSettings = () => {
     try {
       await api.patch(`/hotels/update`, {
         ...form,
-        amenities: form.amenities.split(",").map(a => a.trim()),
+        amenities: form.amenities.split(",").map((a) => a.trim()),
       });
       toast.success("Hotel updated");
       fetchHotel();
@@ -79,7 +72,7 @@ const OwnerHotelSettings = () => {
   const addImages = async () => {
     if (!images.length) return;
     const fd = new FormData();
-    images.forEach(img => fd.append("images", img));
+    images.forEach((img) => fd.append("images", img));
 
     try {
       await api.patch("/hotels/images/add", fd);
@@ -109,7 +102,6 @@ const OwnerHotelSettings = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-24 px-4">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-8 space-y-10">
-
         {/* HEADER */}
         <div className="flex justify-between items-center">
           <div>
@@ -130,11 +122,11 @@ const OwnerHotelSettings = () => {
 
         {/* FORM */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {["name", "address", "city", "state"].map(f => (
+          {["name", "address", "city", "state"].map((f) => (
             <input
               key={f}
               value={form[f]}
-              onChange={e => setForm({ ...form, [f]: e.target.value })}
+              onChange={(e) => setForm({ ...form, [f]: e.target.value })}
               placeholder={f}
               className="p-4 bg-slate-100 rounded-xl font-bold"
             />
@@ -144,7 +136,7 @@ const OwnerHotelSettings = () => {
             <IndianRupee />
             <input
               value={form.basePrice}
-              onChange={e => setForm({ ...form, basePrice: e.target.value })}
+              onChange={(e) => setForm({ ...form, basePrice: e.target.value })}
               className="bg-transparent outline-none font-bold w-full"
               placeholder="Base Price"
             />
@@ -153,14 +145,14 @@ const OwnerHotelSettings = () => {
           <textarea
             rows="4"
             value={form.description}
-            onChange={e => setForm({ ...form, description: e.target.value })}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="Description"
             className="p-4 bg-slate-100 rounded-xl font-bold col-span-full"
           />
 
           <input
             value={form.amenities}
-            onChange={e => setForm({ ...form, amenities: e.target.value })}
+            onChange={(e) => setForm({ ...form, amenities: e.target.value })}
             placeholder="wifi, ac, parking"
             className="p-4 bg-slate-100 rounded-xl font-bold col-span-full"
           />
@@ -179,7 +171,10 @@ const OwnerHotelSettings = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {hotel?.images.map((img) => (
               <div key={img} className="relative group">
-                <img src={img} className="rounded-xl h-40 w-full object-cover" />
+                <img
+                  src={img}
+                  className="rounded-xl h-40 w-full object-cover"
+                />
                 <button
                   onClick={() => removeImage(img)}
                   className="absolute top-2 right-2 bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100"
@@ -194,7 +189,7 @@ const OwnerHotelSettings = () => {
             <input
               type="file"
               multiple
-              onChange={e => setImages([...e.target.files])}
+              onChange={(e) => setImages([...e.target.files])}
             />
             <button
               onClick={addImages}

@@ -9,9 +9,9 @@ import {
   ownerLogin
 } from "../controllers/auth.controllers.js";
 
-import { protect } from "../middelwares/auth.js";
-import upload from "../middelwares/multer.js";
-import { authLimiter, emailLimiter } from "../middelwares/rateLimiter.js";
+import { protect } from "../middlewares/auth.js";
+import upload from "../middlewares/multer.js";
+import { authLimiter, emailLimiter } from "../middlewares/rateLimiter.js";
 
 const authRouter = express.Router();
 

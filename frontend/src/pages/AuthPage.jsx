@@ -4,14 +4,11 @@ import api from "../api/axios.config";
 
 const AuthPage = () => {
   const navigate = useNavigate();
-const [params] = useSearchParams();
+  const [params] = useSearchParams();
 
-const redirect = params.get("redirect")
-  ? decodeURIComponent(params.get("redirect"))
-  : "/";
-
-
-  
+  const redirect = params.get("redirect")
+    ? decodeURIComponent(params.get("redirect"))
+    : "/";
 
   // modes: login | register | forgot | reset
   const [mode, setMode] = useState("login");
@@ -63,13 +60,12 @@ const redirect = params.get("redirect")
           email: form.email,
           password: form.password,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       localStorage.setItem("accessToken", res.data.accessToken);
 
       navigate(redirect);
     } catch (err) {
-      
       setError(err.response?.data?.message);
     } finally {
       setLoading(false);
@@ -94,7 +90,7 @@ const redirect = params.get("redirect")
           password: form.password,
           mobileNumber: form.mobileNumber,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       navigate(redirect);
@@ -107,63 +103,56 @@ const redirect = params.get("redirect")
 
   /* ---------------- FORGOT PASSWORD ---------------- */
   const handleForgotPassword = async () => {
-  if (!form.email) {
-    return setError("Email is required");
-  }
+    if (!form.email) {
+      return setError("Email is required");
+    }
 
-  try {
-    setLoading(true);
-    setError("");
+    try {
+      setLoading(true);
+      setError("");
 
-    await api.post(
-      `${import.meta.env.VITE_API_URL}/auth/forgot-password`,
-      { email: form.email }
-    );
+      await api.post(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
+        email: form.email,
+      });
 
-    // go to reset step
-    switchMode("reset");
-  } catch (err) {
-    setError(err.response?.data?.message || "Failed to send OTP");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      // go to reset step
+      switchMode("reset");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ---------------- RESET PASSWORD ---------------- */
   const handleResetPassword = async () => {
-  if (!form.email || !form.otp || !form.password) {
-    return setError("All fields are required");
-  }
+    if (!form.email || !form.otp || !form.password) {
+      return setError("All fields are required");
+    }
 
-  try {
-    setLoading(true);
-    setError("");
+    try {
+      setLoading(true);
+      setError("");
 
-    await api.post(
-      `${import.meta.env.VITE_API_URL}/auth/reset-password`,
-      {
-        otp:form.otp.trim(),
+      await api.post(`${import.meta.env.VITE_API_URL}/auth/reset-password`, {
+        otp: form.otp.trim(),
         email: form.email,
         newPassword: form.password,
-      }
-    );
+      });
 
-    // back to login after success
-    switchMode("login");
-  } catch (err) {
-    setError(err.response?.data?.message || "Password reset failed");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      // back to login after success
+      switchMode("login");
+    } catch (err) {
+      setError(err.response?.data?.message || "Password reset failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ---------------- UI ---------------- */
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-
         <h1 className="text-2xl font-bold text-center mb-6">
           {mode === "login" && "Login"}
           {mode === "register" && "Create Account"}
@@ -236,10 +225,10 @@ const redirect = params.get("redirect")
             mode === "login"
               ? handleLogin
               : mode === "register"
-              ? handleRegister
-              : mode === "forgot"
-              ? handleForgotPassword
-              : handleResetPassword
+                ? handleRegister
+                : mode === "forgot"
+                  ? handleForgotPassword
+                  : handleResetPassword
           }
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold mt-4 disabled:opacity-50"
         >
@@ -278,7 +267,6 @@ const redirect = params.get("redirect")
             </button>
           )}
         </div>
-
       </div>
     </div>
   );

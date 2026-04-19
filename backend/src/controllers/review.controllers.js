@@ -9,7 +9,7 @@ export const addReview = async (req, res) => {
     const userId = req.userId;
     const { roomId, hotelId } = req.params;
 
-  
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -17,7 +17,7 @@ export const addReview = async (req, res) => {
       });
     }
 
- 
+
     if (!message || rating === undefined) {
       return res.status(400).json({
         success: false,
@@ -96,7 +96,7 @@ export const deleteReview = async (req, res) => {
     const { reviewId } = req.params;
     const userId = req.userId;
 
- 
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -121,7 +121,7 @@ export const deleteReview = async (req, res) => {
       });
     }
 
- 
+
     if (!review.userId.equals(userId)) {
       return res.status(403).json({
         success: false,

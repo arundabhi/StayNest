@@ -14,7 +14,7 @@ import transporter from "../utils/sendEmail.utils.js";
 export const createBooking = async (req, res) => {
   const session = await mongoose.startSession();
 
-  try { 
+  try {
     session.startTransaction();
 
     const {
@@ -77,7 +77,7 @@ export const createBooking = async (req, res) => {
         message: "Check-out must be after check-in",
       });
     }
-   
+
 
     const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
@@ -126,7 +126,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
- 
+
 
     const overlappingBookings = await Booking.countDocuments({
       roomId,
@@ -148,7 +148,7 @@ export const createBooking = async (req, res) => {
         ? overlappingBookings / room.totalRooms
         : 0;
 
-    
+
 
     const dynamicPricing = await calculateDynamicPrice({
       basePrice: room.pricePerDay,
@@ -160,116 +160,116 @@ export const createBooking = async (req, res) => {
 
     const pricePerDay = dynamicPricing.pricePerDay;
 
-  
+
 
     const pricing = calculateFinalPrice({
-  pricePerDay,
-  nights,
-});
-
-/*
-pricing = {
-  subtotal,
-  gstAmount,
-  serviceFee,
-  totalPrice
-}
-*/
-
-let baseSubtotal = pricing.subtotal;
-
-
-let couponApplied = false;
-let couponCode = null;
-let subtotal = pricing.subtotal;
-
-
-const offer = await getSpecialOfferForHotel(hotelId);
-
-if (offer) {
-  specialOfferPercent = offer.discountPercent;
-  specialOfferAmount = Math.round(
-    (subtotal * specialOfferPercent) / 100
-  );
-  subtotal -= specialOfferAmount;
-}
-
-
-let couponDiscount = 0;
-
-if (couponCodeFromClient) {
-  const coupon = await Coupon.findOne({
-    code: couponCodeFromClient,
-    isActive: true,
-  }).session(session);
-
-  if (!coupon) {
-    await session.abortTransaction();
-    return res.status(400).json({
-      success: false,
-      message: "Invalid or expired coupon",
+      pricePerDay,
+      nights,
     });
-  }
+
+    /*
+    pricing = {
+      subtotal,
+      gstAmount,
+      serviceFee,
+      totalPrice
+    }
+    */
+
+    let baseSubtotal = pricing.subtotal;
 
 
-  couponDiscount = calculateCouponDiscount(coupon, subtotal);
-  subtotal -= couponDiscount;
-  couponApplied = couponDiscount > 0;
-  couponCode = coupon.code;
-}
+    let couponApplied = false;
+    let couponCode = null;
+    let subtotal = pricing.subtotal;
 
 
-const gstAmount = Math.round(subtotal * 0.12);
-const serviceFee = pricing.serviceFee;
+    const offer = await getSpecialOfferForHotel(hotelId);
 
-const finalTotal = subtotal + gstAmount + serviceFee;
+    if (offer) {
+      specialOfferPercent = offer.discountPercent;
+      specialOfferAmount = Math.round(
+        (subtotal * specialOfferPercent) / 100
+      );
+      subtotal -= specialOfferAmount;
+    }
 
-const discountAmount = specialOfferAmount + couponDiscount;
+
+    let couponDiscount = 0;
+
+    if (couponCodeFromClient) {
+      const coupon = await Coupon.findOne({
+        code: couponCodeFromClient,
+        isActive: true,
+      }).session(session);
+
+      if (!coupon) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired coupon",
+        });
+      }
+
+
+      couponDiscount = calculateCouponDiscount(coupon, subtotal);
+      subtotal -= couponDiscount;
+      couponApplied = couponDiscount > 0;
+      couponCode = coupon.code;
+    }
+
+
+    const gstAmount = Math.round(subtotal * 0.12);
+    const serviceFee = pricing.serviceFee;
+
+    const finalTotal = subtotal + gstAmount + serviceFee;
+
+    const discountAmount = specialOfferAmount + couponDiscount;
 
     const booking = await Booking.create(
-  [
-    {
-      userId,
-      hotelId,
-      roomId,
-      checkIn: start,
-      checkOut: end,
-      totalGuest,
-      paymentMode,
+      [
+        {
+          userId,
+          hotelId,
+          roomId,
+          checkIn: start,
+          checkOut: end,
+          totalGuest,
+          paymentMode,
 
-      pricePerNight: pricePerDay,
+          pricePerNight: pricePerDay,
 
-      basePrice: pricing.subtotal + discountAmount,
-      discountAmount,
+          basePrice: pricing.subtotal + discountAmount,
+          discountAmount,
 
-      specialOfferPercent,
-      specialOfferAmount,
+          specialOfferPercent,
+          specialOfferAmount,
 
-      couponCode,
-      couponApplied,
-
-      
-      totalPrice: finalTotal,
-
-      pricingBreakdown: dynamicPricing.breakdown,
-      status: "pending",
-      paymentStatus: "pending",
-    },
-  ],
-  { session }
-);
-
-const bookingDoc = await Booking.findById(booking[0]._id)
-  .populate("hotelId", "name city")
-  .populate("roomId", "title").session(session);;
+          couponCode,
+          couponApplied,
 
 
+          totalPrice: finalTotal,
 
-const mailOptions = {
-  from: `"Hotel Booking" <${process.env.SENDER_EMAIL}>`,
-  to: req.user.email,
-  subject: "✅ Booking Confirmed | Your Stay Details",
-  html: `
+          pricingBreakdown: dynamicPricing.breakdown,
+          status: "pending",
+          paymentStatus: "pending",
+        },
+      ],
+      { session }
+    );
+
+    const bookingDoc = await Booking.findById(booking[0]._id)
+      .populate("hotelId", "name city")
+      .populate("roomId", "title").session(session);;
+
+
+
+    const mailOptions = {
+      from: `"Hotel Booking" <${process.env.SENDER_EMAIL}>`,
+      to: req.user.email,
+      subject: "✅ Booking Confirmed | Your Stay Details",
+      html: `
   <div style="font-family: Arial, Helvetica, sans-serif; background:#f4f6f8; padding:30px;">
     <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
 
@@ -344,9 +344,9 @@ const mailOptions = {
     </div>
   </div>
   `
-};
+    };
 
-await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
 
     await session.commitTransaction();
 
@@ -414,7 +414,7 @@ export const previewBookingPrice = async (req, res) => {
     const occupancyRate =
       room.totalRooms > 0 ? overlappingBookings / room.totalRooms : 0;
 
-   
+
     const dynamicPricing = await calculateDynamicPrice({
       basePrice: room.pricePerDay,
       checkIn: start,
@@ -445,7 +445,7 @@ export const previewBookingPrice = async (req, res) => {
       subtotal -= specialOfferAmount;
     }
 
-  
+
     if (couponCode) {
       const coupon = await Coupon.findOne({
         code: couponCode,
@@ -458,7 +458,7 @@ export const previewBookingPrice = async (req, res) => {
       }
     }
 
-  
+
     const gstAmount = Math.round(subtotal * 0.12);
     const totalPrice = subtotal + gstAmount + pricing.serviceFee;
 
@@ -490,7 +490,7 @@ export const previewBookingPrice = async (req, res) => {
 
 
 export const confirmBooking = async (req, res) => {
-  
+
   try {
     const { bookingId } = req.params;
     const userId = req.userId;
@@ -502,13 +502,13 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
-    if(!bookingId){
-      return res.status(400).json({success:false,message:"Booking id must be provide"})
+    if (!bookingId) {
+      return res.status(400).json({ success: false, message: "Booking id must be provide" })
     }
 
-   
+
     const booking = await Booking.findById(bookingId);
-    
+
 
     if (!booking) {
       return res.status(404).json({
@@ -517,23 +517,23 @@ export const confirmBooking = async (req, res) => {
       });
     }
 
- 
+
     if (booking.userId.toString() !== userId.toString()) {
-  return res.status(403).json({
-    success: false,
-    message: "Not allowed to confirm this booking",
-  });
-}
+      return res.status(403).json({
+        success: false,
+        message: "Not allowed to confirm this booking",
+      });
+    }
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
     if (booking.checkOut < new Date()) {
       return res.status(400).json({
-    success: false,
-    message: "Booking already expired"
-  });
-}
+        success: false,
+        message: "Booking already expired"
+      });
+    }
 
 
     if (booking.status !== "pending") {
@@ -545,7 +545,7 @@ export const confirmBooking = async (req, res) => {
 
 
 
-   const roomId = booking.roomId?._id ?? booking.roomId;
+    const roomId = booking.roomId?._id ?? booking.roomId;
 
     const room = await Room.findById(roomId);
     if (!room) {
@@ -604,7 +604,7 @@ export const cancelBooking = async (req, res) => {
       userId,
     });
 
-    const payment = await Payment.findOne({userId,bookingId})
+    const payment = await Payment.findOne({ userId, bookingId })
 
     if (!booking) {
       return res.status(404).json({
@@ -630,7 +630,7 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
- 
+
     if (new Date(booking.checkIn) <= new Date()) {
       return res.status(400).json({
         success: false,
@@ -650,10 +650,10 @@ export const cancelBooking = async (req, res) => {
       const hoursBeforeCheckIn =
         (new Date(booking.checkIn) - new Date()) / (1000 * 60 * 60);
 
-        if(hoursBeforeCheckIn >= 24 && payment.paymentMode === 'COD'){
-          refundAmount = 0;
+      if (hoursBeforeCheckIn >= 24 && payment.paymentMode === 'COD') {
+        refundAmount = 0;
         refundMessage = "No refund";
-        }
+      }
 
       if (hoursBeforeCheckIn >= 24) {
         refundAmount = payment.amount;
@@ -707,11 +707,11 @@ export const getMyBooking = async (req, res) => {
 
 
     const booking = await Booking.findOne({
-  _id: bookingId,
-  userId
-})
-.populate("hotelId", "name city address")
-.populate("roomId", "title roomType pricePerDay images");
+      _id: bookingId,
+      userId
+    })
+      .populate("hotelId", "name city address")
+      .populate("roomId", "title roomType pricePerDay images");
 
 
     if (!booking) {
@@ -748,9 +748,9 @@ export const getAllBookings = async (req, res) => {
     }
 
     const bookings = await Booking.find({ userId })
-  .populate("hotelId", "name city")
-  .populate("roomId", "title roomType pricePerDay")
-  .sort({ checkIn: -1 });
+      .populate("hotelId", "name city")
+      .populate("roomId", "title roomType pricePerDay")
+      .sort({ checkIn: -1 });
 
 
     return res.status(200).json({
@@ -773,7 +773,7 @@ export const getAllBookings = async (req, res) => {
 export const getAllBookingsForHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
-    const user = req.user; 
+    const user = req.user;
 
     if (!hotelId) {
       return res.status(400).json({
@@ -789,7 +789,7 @@ export const getAllBookingsForHotel = async (req, res) => {
       });
     }
 
- 
+
     if (user.role !== "owner") {
       return res.status(403).json({
         success: false,
@@ -967,10 +967,10 @@ export const getPastBooking = async (req, res) => {
       userId,
       status: { $in: ["completed", "canceled"] }
     })
-    .sort({ createdAt: -1 })
-    .populate("hotelId", "name city")
-    .populate("roomId", "roomType pricePerDay")
-;
+      .sort({ createdAt: -1 })
+      .populate("hotelId", "name city")
+      .populate("roomId", "roomType pricePerDay")
+      ;
 
     return res.status(200).json({
       success: true,
@@ -989,7 +989,7 @@ export const getPastBooking = async (req, res) => {
 
 export const autoCancelledPendingBooking = async () => {
   try {
-    const TIME_LIMIT = 15 * 60 * 1000; 
+    const TIME_LIMIT = 15 * 60 * 1000;
     const expiryTime = new Date(Date.now() - TIME_LIMIT);
 
     const result = await Booking.updateMany(
@@ -1022,17 +1022,17 @@ export const getUpcomingBooking = async (req, res) => {
       });
     }
 
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const upcomingBookings = await Booking.find({
       userId,
-      checkIn: { $gte: today },          
+      checkIn: { $gte: today },
       status: { $ne: "canceled" },
-      paymentStatus: "success"         
+      paymentStatus: "success"
     })
-    .sort({ checkIn: 1 }).populate('hotelId','name city').populate('roomId','title');
+      .sort({ checkIn: 1 }).populate('hotelId', 'name city').populate('roomId', 'title');
 
     return res.status(200).json({
       success: true,
@@ -1205,7 +1205,7 @@ export const verifyPayment = async (req, res) => {
   });
 };
 
-export const deleteBooking = async (req,res) => {
+export const deleteBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const userId = req.userId;
@@ -1222,14 +1222,14 @@ export const deleteBooking = async (req,res) => {
 
 
     if (!booking.userId.equals(userId)) {
-  return res.status(403).json({
-    success: false,
-    message: "Not authorized to delete this booking",
-  });
-}
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this booking",
+      });
+    }
 
 
-    
+
     if (!["canceled", "completed"].includes(booking.status)) {
       return res.status(400).json({
         success: false,
@@ -1294,13 +1294,13 @@ export const autoCompleteBooking = async () => {
   try {
     const now = new Date();
 
-   
+
     now.setSeconds(0, 0);
 
     const bookingsToComplete = await Booking.find({
       status: "booked",
       checkOut: { $lt: now },
-      paymentStatus: { $in: ["success"] }, 
+      paymentStatus: { $in: ["success"] },
     });
 
     if (bookingsToComplete.length === 0) {

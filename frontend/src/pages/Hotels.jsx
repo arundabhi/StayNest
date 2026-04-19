@@ -24,7 +24,7 @@ const PriceDisplay = ({ hotelId, basePrice }) => {
     const fetchPricing = async () => {
       try {
         const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/pricing/${hotelId}`
+          `${import.meta.env.VITE_API_URL}/pricing/${hotelId}`,
         );
         if (res.data.success && res.data.pricing) {
           setFestivalOffer(res.data.pricing);
@@ -83,9 +83,7 @@ const Hotels = () => {
   useEffect(() => {
     const fetchHotels = async () => {
       try {
-        const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/hotels`
-        );
+        const res = await api.get(`${import.meta.env.VITE_API_URL}/hotels`);
         if (res.data.success) setHotels(res.data.hotels);
       } catch (err) {
         toast.error("Failed to load hotels");
@@ -105,9 +103,7 @@ const Hotels = () => {
       const matchesSearch =
         hotel.name.toLowerCase().includes(searchTerm) ||
         hotel.city.toLowerCase().includes(searchTerm) ||
-        hotel.amenities?.some((a) =>
-          a.toLowerCase().includes(searchTerm)
-        );
+        hotel.amenities?.some((a) => a.toLowerCase().includes(searchTerm));
 
       const matchesPrice = hotel.basePrice <= maxPrice;
 
@@ -116,17 +112,10 @@ const Hotels = () => {
       const matchesAmenities =
         selectedAmenities.length === 0 ||
         selectedAmenities.every((a) =>
-          hotel.amenities
-            ?.map((x) => x.toLowerCase())
-            .includes(a)
+          hotel.amenities?.map((x) => x.toLowerCase()).includes(a),
         );
 
-      return (
-        matchesSearch &&
-        matchesPrice &&
-        matchesRating &&
-        matchesAmenities
-      );
+      return matchesSearch && matchesPrice && matchesRating && matchesAmenities;
     })
     .sort((a, b) => {
       if (sort === "low-high") return a.basePrice - b.basePrice;
@@ -139,7 +128,7 @@ const Hotels = () => {
     setSelectedAmenities((prev) =>
       prev.includes(amenity)
         ? prev.filter((a) => a !== amenity)
-        : [...prev, amenity]
+        : [...prev, amenity],
     );
   };
 
@@ -156,7 +145,6 @@ const Hotels = () => {
   return (
     <div className="bg-[#FAFBFF] min-h-screen pt-24 pb-20">
       <div className="max-w-7xl mx-auto px-6">
-
         {/* HEADER */}
         <header className="mb-10 text-center">
           <div className="inline-flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-widest mb-4 bg-blue-50 px-4 py-1.5 rounded-full">
@@ -189,7 +177,6 @@ const Hotels = () => {
           {/* FILTER DRAWER */}
           {showFilters && (
             <div className="mt-6 bg-white rounded-3xl p-8 shadow-xl space-y-8">
-
               {/* PRICE */}
               <div>
                 <label className="block text-xs font-bold uppercase mb-3">
@@ -201,9 +188,7 @@ const Hotels = () => {
                   max="30000"
                   step="500"
                   value={maxPrice}
-                  onChange={(e) =>
-                    setMaxPrice(Number(e.target.value))
-                  }
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full accent-blue-600"
                 />
                 <div className="text-sm font-bold text-blue-600 mt-2">
@@ -218,9 +203,7 @@ const Hotels = () => {
                 </label>
                 <select
                   value={minRating}
-                  onChange={(e) =>
-                    setMinRating(Number(e.target.value))
-                  }
+                  onChange={(e) => setMinRating(Number(e.target.value))}
                   className="w-full p-3 bg-gray-50 rounded-xl"
                 >
                   <option value="0">All</option>
@@ -263,15 +246,9 @@ const Hotels = () => {
                   className="w-full p-3 bg-gray-50 rounded-xl"
                 >
                   <option value="">Default</option>
-                  <option value="low-high">
-                    Price: Low to High
-                  </option>
-                  <option value="high-low">
-                    Price: High to Low
-                  </option>
-                  <option value="rating">
-                    Rating
-                  </option>
+                  <option value="low-high">Price: Low to High</option>
+                  <option value="high-low">Price: High to Low</option>
+                  <option value="rating">Rating</option>
                 </select>
               </div>
 
@@ -290,9 +267,7 @@ const Hotels = () => {
           {filteredHotels.map((hotel) => (
             <div
               key={hotel._id}
-              onClick={() =>
-                navigate(`/hotels/${hotel._id}`)
-              }
+              onClick={() => navigate(`/hotels/${hotel._id}`)}
               className="group bg-white rounded-3xl border shadow-sm hover:shadow-xl transition overflow-hidden cursor-pointer"
             >
               <img
@@ -304,9 +279,7 @@ const Hotels = () => {
                 className="h-64 w-full object-cover group-hover:scale-105 transition"
               />
               <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">
-                  {hotel.name}
-                </h3>
+                <h3 className="text-xl font-bold mb-2">{hotel.name}</h3>
                 <p className="text-sm text-gray-400 flex items-center gap-1 mb-4">
                   <MapPin size={14} /> {hotel.city}
                 </p>
@@ -324,7 +297,6 @@ const Hotels = () => {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );

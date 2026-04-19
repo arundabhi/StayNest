@@ -61,10 +61,7 @@ export const sendMessage = async (req, res) => {
     });
 
     // decide who receives SSE
-    const receiverId =
-      sender === "user"
-        ? hotel.owner.toString()
-        : guestId;
+    const receiverId = sender === "user" ? hotel.owner.toString(): guestId;
 
     if (connections[receiverId]) {
       connections[receiverId].forEach(stream => {
@@ -108,9 +105,9 @@ export const getChatMessages = async (req, res) => {
       .populate("userId", "name email")
       .populate("hotelId", "name city");
 
-      const hotelData = messages.length > 0
-  ? messages[0].hotelId
-  : await Hotel.findById(req.params.hotelId).select("name city");
+    const hotelData = messages.length > 0
+      ? messages[0].hotelId
+      : await Hotel.findById(req.params.hotelId).select("name city");
 
     return res.status(200).json({
       success: true,
@@ -130,13 +127,8 @@ export const getChatMessages = async (req, res) => {
 export const markMessagesAsSeen = async (req, res) => {
   try {
     const loggedInUserId = req.userId;
-    console.log("🔥 markMessagesAsSeen called by:", loggedInUserId);
-    
     const { hotelId } = req.params;
-
     const hotel = await Hotel.findById(hotelId);
-    
-
     let query;
     let notifyUsers = [];
 

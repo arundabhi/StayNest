@@ -24,9 +24,9 @@ export const paymentOnStripe = async (req, res) => {
 
 
    if (!booking.userId.equals(req.userId)) {
-  return res.status(403).json({
-    success: false,
-    message: "Not authorized to pay for this booking",
+      return res.status(403).json({
+      success: false,
+      message: "Not authorized to pay for this booking",
   });
 }
 
@@ -155,8 +155,6 @@ export const createRazorpayOrder = async (req, res) => {
   try {
     const userId = req.userId;
     const { bookingId } = req.params;
-
-    console.log(bookingId);
     
     const booking = await Booking.findById(bookingId);
     if (!booking) {
@@ -198,6 +196,7 @@ export const createRazorpayOrder = async (req, res) => {
     });
   }
 };
+
 export const verifyRazorpayPayment = async (req, res) => {
   try {
     const {
@@ -251,6 +250,7 @@ export const verifyRazorpayPayment = async (req, res) => {
     });
   }
 };
+
 export const confirmRazorpayBooking = async (req, res) => {
   const { bookingId } = req.params;
 
@@ -264,6 +264,10 @@ export const confirmRazorpayBooking = async (req, res) => {
     message: "Booking confirmed",
   });
 };
+
+
+
+
 
 export const paymentOnCOD = async (req, res) => {
   try {

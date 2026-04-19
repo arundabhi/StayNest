@@ -15,9 +15,10 @@ const CouponCard = ({ coupon, onApply }) => {
   return (
     <div
       className={`relative bg-white rounded-3xl overflow-hidden border transition-all duration-300 group
-        ${isExpired 
-          ? "bg-gray-50 border-gray-100 opacity-75 grayscale" 
-          : "border-gray-200 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10"
+        ${
+          isExpired
+            ? "bg-gray-50 border-gray-100 opacity-75 grayscale"
+            : "border-gray-200 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10"
         }`}
     >
       {/* TICKET CUTOUTS (CSS hack for that 'punched' look) */}
@@ -28,7 +29,9 @@ const CouponCard = ({ coupon, onApply }) => {
         {/* HEADER & DISCOUNT */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex gap-4">
-            <div className={`p-3 rounded-2xl ${isExpired ? "bg-gray-200" : "bg-blue-50 text-blue-600"}`}>
+            <div
+              className={`p-3 rounded-2xl ${isExpired ? "bg-gray-200" : "bg-blue-50 text-blue-600"}`}
+            >
               <Tag size={24} />
             </div>
             <div>
@@ -40,14 +43,16 @@ const CouponCard = ({ coupon, onApply }) => {
               </p>
             </div>
           </div>
-          
+
           <div className="text-right">
             <div className="text-2xl font-black text-emerald-600 tracking-tighter">
               {coupon.discountType === "PERCENTAGE"
                 ? `${coupon.discountValue}%`
                 : `₹${coupon.discountValue}`}
             </div>
-            <div className="text-[10px] font-bold text-emerald-700/50 uppercase tracking-widest leading-none">OFF</div>
+            <div className="text-[10px] font-bold text-emerald-700/50 uppercase tracking-widest leading-none">
+              OFF
+            </div>
           </div>
         </div>
 
@@ -69,8 +74,13 @@ const CouponCard = ({ coupon, onApply }) => {
               Min. Booking: ₹{coupon.minimumBookingAmount}
             </div>
             <div className="flex items-center gap-2 text-[11px] font-bold text-gray-500 uppercase tracking-tight">
-              <Clock size={14} className={isExpired ? "text-rose-500" : "text-amber-500"} />
-              {isExpired ? "Expired" : `Ends ${new Date(coupon.expiryDate).toLocaleDateString()}`}
+              <Clock
+                size={14}
+                className={isExpired ? "text-rose-500" : "text-amber-500"}
+              />
+              {isExpired
+                ? "Expired"
+                : `Ends ${new Date(coupon.expiryDate).toLocaleDateString()}`}
             </div>
           </div>
 
@@ -79,9 +89,10 @@ const CouponCard = ({ coupon, onApply }) => {
             <button
               onClick={copyCode}
               className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 
-                ${copied 
-                  ? "bg-emerald-500 text-white" 
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95"
+                ${
+                  copied
+                    ? "bg-emerald-500 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95"
                 }`}
             >
               {copied ? (

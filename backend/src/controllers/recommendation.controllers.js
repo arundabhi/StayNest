@@ -5,7 +5,7 @@ import { Booking } from "../models/booking.models.js";
 import { Review } from "../models/review.models.js";
 import { Wishlist } from "../models/wishlist.models.js";
 import { User } from "../models/user.models.js";
-import mongoose  from "mongoose";
+import mongoose from "mongoose";
 
 
 export const getPersonalizedRecommendations = async (req, res) => {
@@ -73,7 +73,7 @@ export const getPersonalizedRecommendations = async (req, res) => {
       ],
     };
 
-  
+
     if (preferences.priceRange.max > 0) {
       query.basePrice = {
         $gte: preferences.priceRange.min * 0.8,
@@ -81,7 +81,7 @@ export const getPersonalizedRecommendations = async (req, res) => {
       };
     }
 
- 
+
     const recommendations = await Hotel.find(query)
       .populate({
         path: "owner",
@@ -93,10 +93,10 @@ export const getPersonalizedRecommendations = async (req, res) => {
     const scoredRecommendations = recommendations.map((hotel) => {
       let score = 0;
 
-     
+
       if (preferences.cities.includes(hotel.city)) score += 30;
 
-    
+
       const matchedAmenities = hotel.amenities.filter((a) =>
         preferences.amenities.has(a)
       );
@@ -112,7 +112,7 @@ export const getPersonalizedRecommendations = async (req, res) => {
       };
     });
 
- 
+
     scoredRecommendations.sort((a, b) => b.matchScore - a.matchScore);
 
     return res.status(200).json({
@@ -238,7 +238,7 @@ export const getTopRatedHotels = async (req, res) => {
       isActive: true,
       isApproved: true,
       avgRating: { $gte: Number(minRating) },
-      totalReviews: { $gte: 5 }, 
+      totalReviews: { $gte: 5 },
     };
 
     if (city) {
@@ -286,7 +286,7 @@ export const getBestValueHotels = async (req, res) => {
 
     const hotels = await Hotel.find(query).select("-__v");
 
-  
+
     const valueHotels = hotels
       .map((hotel) => ({
         ...hotel.toObject(),
@@ -331,7 +331,7 @@ export const getSimilarHotels = async (req, res) => {
       });
     }
 
-   
+
     const similarHotels = await Hotel.find({
       _id: { $ne: hotelId },
       isActive: true,
@@ -343,24 +343,24 @@ export const getSimilarHotels = async (req, res) => {
       },
       amenities: { $in: hotel.amenities },
     })
-      .limit(Number(limit) * 2) 
+      .limit(Number(limit) * 2)
       .select("-__v");
 
     const scoredHotels = similarHotels
       .map((similar) => {
         let score = 0;
 
-        
+
         const priceDiff = Math.abs(similar.basePrice - hotel.basePrice);
         score += Math.max(0, 30 - priceDiff / 100);
 
-       
+
         const commonAmenities = similar.amenities.filter((a) =>
           hotel.amenities.includes(a)
         );
         score += commonAmenities.length * 10;
 
-      
+
         const ratingDiff = Math.abs(
           (similar.avgRating || 0) - (hotel.avgRating || 0)
         );
@@ -489,7 +489,7 @@ export const getSmartSearchRecommendations = async (req, res) => {
       limit = 20,
     } = req.query;
 
-   
+
     const query = {
       isActive: true,
       isApproved: true,
@@ -508,7 +508,7 @@ export const getSmartSearchRecommendations = async (req, res) => {
 
     let hotels = await Hotel.find(query).limit(Number(limit) * 2);
 
-  
+
     if (checkIn && checkOut && guests) {
       const availableHotels = [];
 
@@ -531,7 +531,7 @@ export const getSmartSearchRecommendations = async (req, res) => {
               ...hotel.toObject(),
               availableRoom: room,
             });
-            break; 
+            break;
           }
         }
       }
@@ -539,7 +539,7 @@ export const getSmartSearchRecommendations = async (req, res) => {
       hotels = availableHotels;
     }
 
-   
+
     let userScore = {};
     if (userId) {
       const userBookings = await Booking.find({ userId })
@@ -600,7 +600,7 @@ export const getSpecialOffers = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
 
-   
+
     const hotels = await Hotel.find({
       isActive: true,
       isApproved: true,
@@ -626,7 +626,7 @@ export const getSpecialOffers = async (req, res) => {
 
       const occupancyRate = totalCapacity > 0 ? bookedRooms / totalCapacity : 0;
 
-      
+
       let discountPercent = 0;
       if (occupancyRate < 0.3) discountPercent = 30;
       else if (occupancyRate < 0.5) discountPercent = 20;
@@ -674,15 +674,15 @@ export const getUsersAlsoViewed = async (req, res) => {
     const { hotelId } = req.params;
     const { limit = 5 } = req.query;
 
-  const usersWhoViewed = await Booking.aggregate([
-  { $match: { hotelId: new mongoose.Types.ObjectId(hotelId) } },
+    const usersWhoViewed = await Booking.aggregate([
+      { $match: { hotelId: new mongoose.Types.ObjectId(hotelId) } },
 
-  { $group: { _id: "$userId" } },
+      { $group: { _id: "$userId" } },
 
-  { $limit: 100 }
-]);
+      { $limit: 100 }
+    ]);
 
-   
+
     const otherHotels = await Booking.aggregate([
       {
         $match: {

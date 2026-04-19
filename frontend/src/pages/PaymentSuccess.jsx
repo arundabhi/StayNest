@@ -7,7 +7,7 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
 
   const session_id = params.get("session_id"); // Stripe
-  const bookingId = params.get("bookingId");   // Razorpay
+  const bookingId = params.get("bookingId"); // Razorpay
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -24,7 +24,7 @@ const PaymentSuccess = () => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
         }
 
@@ -36,14 +36,13 @@ const PaymentSuccess = () => {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
-            }
+            },
           );
         }
 
         setTimeout(() => {
           navigate("/bookings");
         }, 2500);
-
       } catch (error) {
         console.error(error);
         navigate("/payment-failed");

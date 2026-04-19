@@ -40,33 +40,29 @@ const Navbar = () => {
     }
 
     const loadUser = async () => {
-  try {
-    const res = await api.get("/users/me");
+      try {
+        const res = await api.get("/users/me");
 
-    const user = res.data.user;
+        const user = res.data.user;
 
-    setIsLoggedIn(true);
-    setUserRole(user.role);
+        setIsLoggedIn(true);
+        setUserRole(user.role);
 
- 
-    if (user.role === "owner") {
-      const hotelRes = await api.get("/hotels/my/hotel");
-  
-      
-      if (hotelRes.data) {
-        console.log(hotelRes.data.hotels[0]._id);
-        
-        setMyHotelId(hotelRes.data.hotels[0]._id);
+        if (user.role === "owner") {
+          const hotelRes = await api.get("/hotels/my/hotel");
 
+          if (hotelRes.data) {
+            console.log(hotelRes.data.hotels[0]._id);
+
+            setMyHotelId(hotelRes.data.hotels[0]._id);
+          }
+        }
+      } catch (err) {
+        console.log("Navbar auth failed:", err);
+        localStorage.clear();
+        setIsLoggedIn(false);
       }
-    }
-  } catch (err) {
-    console.log("Navbar auth failed:", err);
-    localStorage.clear();
-    setIsLoggedIn(false);
-  }
-};
-
+    };
 
     loadUser();
   }, [location.pathname]);
@@ -86,12 +82,12 @@ const Navbar = () => {
   };
 
   const isActive = (path) => {
-  if (!path) return false;
+    if (!path) return false;
 
-  return location.pathname === path || location.pathname.startsWith(path + "/");
-};
-
-
+    return (
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
+  };
 
   const guestLinks = [
     { name: "Home", path: "/", icon: <Home size={18} /> },
@@ -108,13 +104,13 @@ const Navbar = () => {
 
     {
       name: "Inventory",
-      path:  `/owner/hotel/${myHotelId}/rooms` ,
+      path: `/owner/hotel/${myHotelId}/rooms`,
       icon: <BedDouble size={18} />,
     },
 
     {
       name: "Chats",
-      path:   `/owner/hotel/chat/${myHotelId}` ,
+      path: `/owner/hotel/chat/${myHotelId}`,
       icon: <MessageSquare size={18} />,
     },
   ];

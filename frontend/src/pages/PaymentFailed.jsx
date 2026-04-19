@@ -8,7 +8,6 @@ const PaymentFailed = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white rounded-3xl shadow-lg p-8 max-w-md w-full text-center">
-        
         {/* ICON */}
         <div className="flex justify-center mb-4">
           <XCircle size={64} className="text-red-500" />
@@ -21,8 +20,8 @@ const PaymentFailed = () => {
 
         {/* MESSAGE */}
         <p className="text-gray-600 mb-6">
-          Your payment could not be completed.  
-          This may be due to insufficient balance, network issues, or payment cancellation.
+          Your payment could not be completed. This may be due to insufficient
+          balance, network issues, or payment cancellation.
         </p>
 
         {/* ACTIONS */}
@@ -44,7 +43,8 @@ const PaymentFailed = () => {
 
         {/* SUPPORT */}
         <p className="text-sm text-gray-400 mt-6">
-          If the amount was deducted, it will be refunded automatically within 5–7 working days.
+          If the amount was deducted, it will be refunded automatically within
+          5–7 working days.
         </p>
       </div>
     </div>

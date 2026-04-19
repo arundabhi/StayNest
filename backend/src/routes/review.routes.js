@@ -7,7 +7,7 @@ import {
   getHotelRating
 } from "../controllers/review.controllers.js";
 
-import { protect } from "../middelwares/auth.js";
+import { protect } from "../middlewares/auth.js";
 
 
 const reviewRouter = express.Router();

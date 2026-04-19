@@ -112,29 +112,43 @@ export const updatePricing = async (req, res) => {
 
 export const showDiscountToUser = async (req,res) => {
   try {
-    const {hotelId} = req.params;
+    const { hotelId } = req.params;
 
     if(!hotelId){
-      res.status(400).json({success:false,message:"Hotel Id required"})
+      return res.status(400).json({
+        success:false,
+        message:"Hotel Id required"
+      });
     }
 
-    const pricing = await Pricing.findOne({
-      hotelId
-    });
+    const pricing = await Pricing.findOne({ hotelId });
+
+    if(!pricing){
+      return res.status(404).json({
+        success:false,
+        message:"No Festival Offer found"
+      });
+    }
 
     const today = new Date();
 
     if(today > pricing.endDate){
-      res.status(400).json({success:false,message:"Expired"})
+      return res.status(400).json({
+        success:false,
+        message:"Expired"
+      });
     }
 
-    if(!pricing){
-      res.status(404).json({success:false,message:"No Festival Offer found"});
-    }
+    return res.status(200).json({
+      success:true,
+      message:"Festival offer available",
+      pricing
+    });
 
-    res.status(200).json({success:true,message:"Festival offer available",pricing})
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: error.message
+    });
   }
 }
 

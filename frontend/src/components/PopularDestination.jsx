@@ -11,21 +11,21 @@ const PopularDestination = () => {
       image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
       hotelCount: 120,
       rating: 4.6,
-      tag: "Coastal Beauty"
+      tag: "Coastal Beauty",
     },
     {
       city: "Manali",
       image: "https://images.unsplash.com/photo-1548013146-72479768bada",
       hotelCount: 85,
       rating: 4.5,
-      tag: "Mountain Retreat"
+      tag: "Mountain Retreat",
     },
     {
       city: "Jaipur",
       image: "https://images.unsplash.com/photo-1564507592333-c60657eea523",
       hotelCount: 95,
       rating: 4.4,
-      tag: "Heritage City"
+      tag: "Heritage City",
     },
   ];
 
@@ -38,14 +38,19 @@ const PopularDestination = () => {
             Popular <span className="text-blue-600">Destinations</span>
           </h2>
           <p className="text-gray-500 font-medium max-w-md">
-            The most sought-after cities by our travelers, offering hand-picked stays for every style.
+            The most sought-after cities by our travelers, offering hand-picked
+            stays for every style.
           </p>
         </div>
-        <button 
-          onClick={() => navigate('/hotels')}
+        <button
+          onClick={() => navigate("/hotels")}
           className="group flex items-center gap-2 text-sm font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors"
         >
-          Explore all <ArrowUpRight size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+          Explore all{" "}
+          <ArrowUpRight
+            size={18}
+            className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
+          />
         </button>
       </div>
 
@@ -80,19 +85,25 @@ const PopularDestination = () => {
                 <div>
                   <div className="flex items-center gap-1.5 text-blue-400 mb-2">
                     <MapPin size={16} />
-                    <span className="text-xs font-bold uppercase tracking-[0.2em]">{dest.hotelCount} Properties</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.2em]">
+                      {dest.hotelCount} Properties
+                    </span>
                   </div>
                   <h3 className="text-3xl font-black text-white leading-none">
                     {dest.city}
                   </h3>
                 </div>
-                
+
                 <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-3 text-center">
                   <div className="flex items-center gap-1 text-yellow-400 mb-0.5">
                     <Star size={14} fill="currentColor" />
-                    <span className="text-sm font-bold text-white">{dest.rating}</span>
+                    <span className="text-sm font-bold text-white">
+                      {dest.rating}
+                    </span>
                   </div>
-                  <p className="text-[10px] font-bold text-white/60 uppercase">Rating</p>
+                  <p className="text-[10px] font-bold text-white/60 uppercase">
+                    Rating
+                  </p>
                 </div>
               </div>
             </div>

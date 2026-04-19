@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 const HotelCard = ({ hotel }) => {
   const navigate = useNavigate();
   const token = localStorage.getItem("accessToken");
-  
+
   const [isWished, setIsWished] = useState(false);
   const [wishLoading, setWishLoading] = useState(false);
 
@@ -15,7 +15,9 @@ const HotelCard = ({ hotel }) => {
   const [festivalOffer, setFestivalOffer] = useState(null);
 
   const hasOffer = !!hotel.offer;
-  const savingAmount = hasOffer ? hotel.offer.originalPrice - hotel.offer.offerPrice : 0;
+  const savingAmount = hasOffer
+    ? hotel.offer.originalPrice - hotel.offer.offerPrice
+    : 0;
 
   /* 1. Check wishlist status (Existing) */
   useEffect(() => {
@@ -24,7 +26,7 @@ const HotelCard = ({ hotel }) => {
       try {
         const res = await axios.get(
           `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotel._id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setIsWished(res.data.wishlisted);
       } catch (err) {
@@ -38,7 +40,9 @@ const HotelCard = ({ hotel }) => {
   useEffect(() => {
     const fetchFestivalPricing = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/pricing/${hotel._id}`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/pricing/${hotel._id}`,
+        );
         if (res.data.success && res.data.pricing) {
           setFestivalOffer(res.data.pricing);
         }
@@ -58,10 +62,10 @@ const HotelCard = ({ hotel }) => {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
         { hotelId: hotel._id },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsWished(res.data.wished);
-      toast.success(res.data.message, { icon: res.data.wished ? '❤️' : '💔' });
+      toast.success(res.data.message, { icon: res.data.wished ? "❤️" : "💔" });
     } catch (error) {
       toast.error(error.message || "Failed to update wishlist");
     } finally {
@@ -70,7 +74,7 @@ const HotelCard = ({ hotel }) => {
   };
 
   return (
-    <div 
+    <div
       className="group bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 overflow-hidden relative cursor-pointer"
       onClick={() => navigate(`/hotels/${hotel._id}`)}
     >
@@ -82,7 +86,7 @@ const HotelCard = ({ hotel }) => {
           </div>
           {festivalOffer.multiplier < 1 && (
             <div className="bg-white/90 backdrop-blur-md text-orange-700 text-[9px] font-bold px-2 py-0.5 rounded-full border border-orange-100 flex items-center gap-1">
-               Special Pricing Active
+              Special Pricing Active
             </div>
           )}
         </div>
@@ -95,19 +99,20 @@ const HotelCard = ({ hotel }) => {
             {hotel.offer.discountPercent}% OFF
           </div>
           <div className="bg-white/90 backdrop-blur-md text-emerald-700 text-[9px] font-bold px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
-             <Sparkles size={10} /> Save ₹{savingAmount}
+            <Sparkles size={10} /> Save ₹{savingAmount}
           </div>
         </div>
       )}
 
       {/* ❤️ WISHLIST BUTTON (Existing) */}
-      <button 
+      <button
         onClick={handleWishlistToggle}
         disabled={wishLoading}
         className={`absolute top-4 right-4 z-20 p-2.5 backdrop-blur-md rounded-full transition-all border border-white/30 shadow-sm 
-          ${isWished 
-            ? "bg-rose-500 text-white border-rose-500" 
-            : "bg-white/20 text-white hover:bg-white hover:text-rose-500"
+          ${
+            isWished
+              ? "bg-rose-500 text-white border-rose-500"
+              : "bg-white/20 text-white hover:bg-white hover:text-rose-500"
           } ${wishLoading ? "opacity-70 animate-pulse" : ""}`}
       >
         <Heart size={18} fill={isWished ? "currentColor" : "none"} />
@@ -131,7 +136,9 @@ const HotelCard = ({ hotel }) => {
           </h3>
           <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
             <Star size={14} className="text-amber-500 fill-amber-500" />
-            <span className="text-sm font-bold text-amber-700">{hotel.avgRating || "0.0"}</span>
+            <span className="text-sm font-bold text-amber-700">
+              {hotel.avgRating || "0.0"}
+            </span>
           </div>
         </div>
 
@@ -144,10 +151,12 @@ const HotelCard = ({ hotel }) => {
         {hotel.matchScore !== undefined && (
           <div className="bg-blue-50/50 rounded-2xl p-3 border border-blue-100/50 mb-4">
             <div className="flex justify-between items-center mb-1.5">
-               <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1">
-                 <Sparkles size={12} /> Personalized Match
-               </span>
-               <span className="text-xs font-bold text-blue-700">{hotel.matchScore}%</span>
+              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1">
+                <Sparkles size={12} /> Personalized Match
+              </span>
+              <span className="text-xs font-bold text-blue-700">
+                {hotel.matchScore}%
+              </span>
             </div>
             <div className="w-full bg-gray-200/50 rounded-full h-1.5 overflow-hidden">
               <div
@@ -168,10 +177,15 @@ const HotelCard = ({ hotel }) => {
                   ₹{hotel.basePrice.toLocaleString()}
                 </p>
                 <div className="flex items-baseline gap-1">
-                   <p className="text-2xl font-black text-orange-600">
-                     ₹{(hotel.basePrice * festivalOffer.multiplier).toLocaleString()}
-                   </p>
-                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">/ night</span>
+                  <p className="text-2xl font-black text-orange-600">
+                    ₹
+                    {(
+                      hotel.basePrice * festivalOffer.multiplier
+                    ).toLocaleString()}
+                  </p>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                    / night
+                  </span>
                 </div>
               </>
             ) : hasOffer ? (
@@ -180,10 +194,12 @@ const HotelCard = ({ hotel }) => {
                   ₹{hotel.offer.originalPrice.toLocaleString()}
                 </p>
                 <div className="flex items-baseline gap-1">
-                   <p className="text-2xl font-black text-gray-900">
-                     ₹{hotel.offer.offerPrice.toLocaleString()}
-                   </p>
-                   <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">/ night</span>
+                  <p className="text-2xl font-black text-gray-900">
+                    ₹{hotel.offer.offerPrice.toLocaleString()}
+                  </p>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                    / night
+                  </span>
                 </div>
               </>
             ) : (
@@ -191,15 +207,20 @@ const HotelCard = ({ hotel }) => {
                 <p className="text-2xl font-black text-gray-900">
                   ₹{hotel.basePrice.toLocaleString()}
                 </p>
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">/ night</span>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                  / night
+                </span>
               </div>
             )}
           </div>
 
           <button
-            className={`p-3 rounded-2xl transition-colors shadow-lg group/btn ${festivalOffer ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-900 hover:bg-blue-600'}`}
+            className={`p-3 rounded-2xl transition-colors shadow-lg group/btn ${festivalOffer ? "bg-orange-600 hover:bg-orange-700" : "bg-gray-900 hover:bg-blue-600"}`}
           >
-            <ArrowRight size={20} className="text-white group-hover/btn:translate-x-1 transition-transform" />
+            <ArrowRight
+              size={20}
+              className="text-white group-hover/btn:translate-x-1 transition-transform"
+            />
           </button>
         </div>
       </div>

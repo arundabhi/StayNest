@@ -14,9 +14,9 @@ import {
   previewBookingPrice,
   deleteBooking
 } from "../controllers/booking.controllers.js";
-import { protect } from "../middelwares/auth.js";
-import { authorizeRoles } from "../middelwares/role.js";
-import { emailLimiter } from "../middelwares/rateLimiter.js";
+import { protect } from "../middlewares/auth.js";
+import { authorizeRoles } from "../middlewares/role.js";
+import { emailLimiter } from "../middlewares/rateLimiter.js";
 
 const bookingRouter = express.Router();
 

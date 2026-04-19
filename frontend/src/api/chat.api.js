@@ -1,4 +1,4 @@
-import api from '../api/axios.config';
+import api from "../api/axios.config";
 
 const API = api.create({ baseURL: import.meta.env.VITE_API_URL });
 
@@ -9,11 +9,10 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-export const fetchMessages = (hotelId, page = 1) => 
+export const fetchMessages = (hotelId, page = 1) =>
   API.get(`/chats/${hotelId}?page=${page}`);
 
-export const postMessage = (hotelId, messageData) => 
+export const postMessage = (hotelId, messageData) =>
   API.post(`/chats/${hotelId}`, messageData);
 
-export const markSeen = (hotelId) => 
-  API.patch(`/chats/seen/${hotelId}`);
+export const markSeen = (hotelId) => API.patch(`/chats/seen/${hotelId}`);

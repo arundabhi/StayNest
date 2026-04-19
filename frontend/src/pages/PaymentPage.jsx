@@ -20,7 +20,7 @@ const Payment = () => {
           `${import.meta.env.VITE_API_URL}/bookings/my/${bookingId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const bookingData = res.data.booking;
@@ -56,7 +56,7 @@ const Payment = () => {
         const res = await api.post(
           `${import.meta.env.VITE_API_URL}/payment/stripe/${bookingId}`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         window.location.href = res.data.sessionUrl;
         return;
@@ -67,7 +67,7 @@ const Payment = () => {
         const order = await api.post(
           `${import.meta.env.VITE_API_URL}/payment/razorpay/${bookingId}`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         new window.Razorpay({
@@ -85,7 +85,7 @@ const Payment = () => {
                 razorpay_payment_id: resp.razorpay_payment_id,
                 razorpay_signature: resp.razorpay_signature,
               },
-              { headers: { Authorization: `Bearer ${token}` } }
+              { headers: { Authorization: `Bearer ${token}` } },
             );
             navigate(`/payment-success?bookingId=${bookingId}`);
           },
@@ -98,7 +98,7 @@ const Payment = () => {
         await api.post(
           `${import.meta.env.VITE_API_URL}/payment/cod/${bookingId}`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         navigate("/bookings");
       }
@@ -117,9 +117,15 @@ const Payment = () => {
         <h2 className="text-2xl font-bold mb-4">Complete Payment</h2>
 
         <div className="text-sm text-gray-600 mb-4">
-          <p><b>Hotel:</b> {booking.hotelId.name}</p>
-          <p><b>Room:</b> {booking.roomId.title}</p>
-          <p><b>Total Amount:</b> ₹{booking.totalPrice}</p>
+          <p>
+            <b>Hotel:</b> {booking.hotelId.name}
+          </p>
+          <p>
+            <b>Room:</b> {booking.roomId.title}
+          </p>
+          <p>
+            <b>Total Amount:</b> ₹{booking.totalPrice}
+          </p>
         </div>
 
         <div className="space-y-3">
@@ -128,9 +134,7 @@ const Payment = () => {
               key={mode}
               onClick={() => setPaymentMode(mode)}
               className={`w-full p-4 border rounded-xl ${
-                paymentMode === mode
-                  ? "border-blue-600 bg-blue-50"
-                  : ""
+                paymentMode === mode ? "border-blue-600 bg-blue-50" : ""
               }`}
             >
               {mode}

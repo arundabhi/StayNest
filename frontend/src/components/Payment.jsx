@@ -5,11 +5,10 @@ import { useNavigate } from "react-router-dom";
 
 const Payment = ({
   bookingId,
-  paymentMode,   // 👈 passed from RoomBook
+  paymentMode, // 👈 passed from RoomBook
   hotel,
   onSuccess,
 }) => {
-
   const token = localStorage.getItem("accessToken");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ const Payment = ({
         const stripe = await api.post(
           `${import.meta.env.VITE_API_URL}/payment/stripe/${bookingId}`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         window.location.href = stripe.data.sessionUrl;
@@ -40,7 +39,7 @@ const Payment = ({
         const order = await api.post(
           `${import.meta.env.VITE_API_URL}/payment/razorpay/${bookingId}`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         new window.Razorpay({
@@ -58,7 +57,7 @@ const Payment = ({
                 razorpay_payment_id: resp.razorpay_payment_id,
                 razorpay_signature: resp.razorpay_signature,
               },
-              { headers: { Authorization: `Bearer ${token}` } }
+              { headers: { Authorization: `Bearer ${token}` } },
             );
 
             onSuccess ? onSuccess() : navigate("/payment-failed");
@@ -73,7 +72,7 @@ const Payment = ({
         await api.post(
           `${import.meta.env.VITE_API_URL}/payment/cod/${bookingId}`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         navigate(`/bookings/my/${bookingId}`);

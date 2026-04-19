@@ -4,7 +4,7 @@ import {
   BadgePercent,
   Headset,
   Star,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 
 const features = [
@@ -53,7 +53,8 @@ const WhyChooseStayNext = () => {
           Experience travel, <span className="text-blue-600">redefined.</span>
         </h2>
         <p className="text-gray-500 text-lg font-medium">
-          We combine cutting-edge technology with world-class hospitality to ensure your journey is perfect from start to finish.
+          We combine cutting-edge technology with world-class hospitality to
+          ensure your journey is perfect from start to finish.
         </p>
       </div>
 
@@ -67,11 +68,16 @@ const WhyChooseStayNext = () => {
               className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500"
             >
               {/* Icon Container with dynamic gradient background */}
-              <div className={`flex items-center justify-center h-16 w-16 rounded-2xl bg-gray-50 mb-6 group-hover:scale-110 transition-transform duration-500`}>
-                 <div className="relative">
-                    <div className="absolute inset-0 bg-blue-200 blur-lg opacity-0 group-hover:opacity-50 transition-opacity" />
-                    <Icon size={32} className="relative text-gray-900 group-hover:text-blue-600 transition-colors" />
-                 </div>
+              <div
+                className={`flex items-center justify-center h-16 w-16 rounded-2xl bg-gray-50 mb-6 group-hover:scale-110 transition-transform duration-500`}
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 bg-blue-200 blur-lg opacity-0 group-hover:opacity-50 transition-opacity" />
+                  <Icon
+                    size={32}
+                    className="relative text-gray-900 group-hover:text-blue-600 transition-colors"
+                  />
+                </div>
               </div>
 
               <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
@@ -83,7 +89,7 @@ const WhyChooseStayNext = () => {
 
               {/* Decorative Corner Accent */}
               <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-10 transition-opacity">
-                 <Icon size={64} />
+                <Icon size={64} />
               </div>
             </div>
           );

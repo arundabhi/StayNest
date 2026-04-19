@@ -12,8 +12,8 @@ import {
   searchRooms,
 } from "../controllers/room.controllers.js";
 
-import { protect } from "../middelwares/auth.js";
-import upload from "../middelwares/multer.js";
+import { protect } from "../middlewares/auth.js";
+import upload from "../middlewares/multer.js";
 
 const roomRouter = express.Router();
 
