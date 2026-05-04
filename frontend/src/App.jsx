@@ -31,6 +31,7 @@ import OwnerPayments from "./pages/owner/OwnerPaymnets";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Pricing from "./pages/owner/Pricing";
+import AIChat from "./components/AI/AIChat";
 
 const App = () => {
   return (
@@ -79,6 +80,7 @@ const App = () => {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Route>
       </Routes>
+      <AIChat />
     </>
   );
 };

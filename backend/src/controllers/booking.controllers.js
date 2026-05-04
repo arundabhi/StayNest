@@ -226,6 +226,9 @@ export const createBooking = async (req, res) => {
 
     const discountAmount = specialOfferAmount + couponDiscount;
 
+    const normalizedPayment = paymentMode.toUpperCase();
+
+
     const booking = await Booking.create(
       [
         {
@@ -235,7 +238,7 @@ export const createBooking = async (req, res) => {
           checkIn: start,
           checkOut: end,
           totalGuest,
-          paymentMode,
+          paymentMode: normalizedPayment,
 
           pricePerNight: pricePerDay,
 

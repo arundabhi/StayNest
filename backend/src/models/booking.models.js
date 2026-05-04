@@ -46,7 +46,7 @@ const bookingSchema = new Schema(
 
     paymentMode: {
       type: String,
-      enum: ["COD", "PAYTM", "RAZORPAY", "STRIPE"],
+      enum: ["COD", "RAZORPAY", "STRIPE"],
       required: true,
     },
 

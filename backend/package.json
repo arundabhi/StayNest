@@ -1,6 +1,13 @@
 {
   "type": "module",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/community": "^1.1.27",
+    "@langchain/core": "^1.1.40",
+    "@langchain/google-genai": "^2.1.27",
+    "@langchain/groq": "^1.2.0",
+    "@langchain/mongodb": "^1.1.0",
+    "@langchain/openai": "^1.4.5",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
@@ -12,6 +19,8 @@
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.3",
+    "langchain": "^0.3.37",
+    "mongodb": "^7.1.1",
     "mongoose": "^9.0.1",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
@@ -21,7 +30,8 @@
     "socket.io": "^4.8.3",
     "streamifier": "^0.1.1",
     "stripe": "^20.1.0",
-    "validator": "^13.15.23"
+    "validator": "^13.15.23",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
@@ -37,7 +47,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon -r dotenv/config --experimental-json-modules index.js",
+    "dev": "nodemon --experimental-json-modules index.js",
     "start": "node -r dotenv/config index.js",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules ACCESS_TOKEN_SECRET=test_secret REFRESH_TOKEN_EXPIRES=1d REFRESH_TOKEN_SECRET=test_refresh_secret REFRESH_TOKEN_EXPIRES=7d STRIPE_SECRET_KEY=sk_test_123 RAZORPAY_API_KEY=rzp_test_123 RAZORPAY_SECRET_KEY=test_secret_123 jest"
   },

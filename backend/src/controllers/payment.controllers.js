@@ -234,7 +234,7 @@ export const verifyRazorpayPayment = async (req, res) => {
  
     await Booking.findByIdAndUpdate(payment.bookingId, {
       status: "booked",
-      paymentStatus: "success",
+      paymentStatus: "success"
     });
 
     return res.status(200).json({
@@ -250,6 +250,8 @@ export const verifyRazorpayPayment = async (req, res) => {
     });
   }
 };
+
+
 
 export const confirmRazorpayBooking = async (req, res) => {
   const { bookingId } = req.params;
@@ -343,6 +345,49 @@ export const getMyPayments = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch payments",
+    });
+  }
+};
+
+export const getPatmentByBookingId = async (req, res) => {
+  try {
+    const userId = req.userId.toString();
+    console.log(userId);
+    
+  
+    const { bookingId } = req.params;
+
+    const payment = await Payment.findOne({ bookingId, userId })
+      .populate({
+        path: "bookingId",
+        select: "hotelId checkIn checkOut totalPrice status paymentStatus",
+        populate: {
+          path: "hotelId",
+          select: "name city",
+        },
+      })
+      .populate({
+        path: "userId",
+        select: "name email",
+      });
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      payment,
+    });
+
+  } catch (error) {
+    console.error("Get payment by booking ID error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch payment",
     });
   }
 };

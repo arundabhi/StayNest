@@ -32,6 +32,9 @@ const HotelDetails = () => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedRoomType, setSelectedRoomType] = useState("All");
+  const [isWished, setIsWished] = useState(false);
+  const [wishLoading, setWishLoading] = useState(false);
+  const token = localStorage.getItem("accessToken");
 
   const checkIn = stayDates.checkIn;
   const checkOut = stayDates.checkOut;
@@ -71,6 +74,16 @@ const HotelDetails = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    api
+      .get(`/wishlists/is-wishlisted/${hotelId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setIsWished(res.data.wishlisted))
+      .catch(() => {});
+  }, [hotelId, token]);
 
   const loadMasterData = useCallback(async () => {
     setLoading(true);
@@ -161,6 +174,25 @@ const HotelDetails = () => {
     );
   };
 
+  const handleWishlistToggle = async (e) => {
+    e.stopPropagation();
+    if (!token) return toast.error("Please login to save hotels");
+    try {
+      setWishLoading(true);
+      const res = await api.post(
+        `/wishlists/toggle`,
+        { hotelId: hotelData._id },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setIsWished(res.data.wished);
+      toast.success(res.data.message, { icon: res.data.wished ? "❤️" : "💔" });
+    } catch (error) {
+      toast.error(error.message || "Failed to update wishlist");
+    } finally {
+      setWishLoading(false);
+    }
+  };
+
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast.success("Link copied!");
@@ -219,8 +251,15 @@ const HotelDetails = () => {
             >
               <Share size={16} /> Share
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium hover:bg-gray-50 transition">
-              <Heart size={16} /> Save
+            <button
+              onClick={handleWishlistToggle}
+              disabled={wishLoading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium transition ${
+                isWished ? "bg-rose-50 text-rose-600 border-rose-200" : "bg-white hover:bg-gray-50 text-gray-700"
+              }`}
+            >
+              <Heart size={16} fill={isWished ? "currentColor" : "none"} /> 
+              {wishLoading ? "Saving..." : isWished ? "Saved" : "Save"}
             </button>
           </div>
         </div>
@@ -242,11 +281,10 @@ const HotelDetails = () => {
                   <button
                     key={tab}
                     onClick={() => scrollToSection(tab)}
-                    className={`py-3 text-sm font-semibold capitalize border-b-2 whitespace-nowrap transition-colors ${
-                      activeTab === tab
+                    className={`py-3 text-sm font-semibold capitalize border-b-2 whitespace-nowrap transition-colors ${activeTab === tab
                         ? "border-indigo-600 text-indigo-600"
                         : "border-transparent text-gray-500 hover:text-gray-700"
-                    }`}
+                      }`}
                   >
                     {tab}
                   </button>

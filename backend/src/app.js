@@ -22,6 +22,7 @@ import analyticRouter from "./routes/analytic.routes.js";
 import availabilityRouter from "./routes/availability.routes.js";
 import { apiLimiter } from "./middlewares/rateLimiter.js";
 import pricingRouter from "./routes/pricing.routes.js";
+import aiRouter from "./routes/ai.routes.js";
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use("/api/v1/recommendations", recommendationRoutes);
 app.use("/api/v1/analytics", analyticRouter);
 app.use("/api/v1/availability", availabilityRouter);
 app.use("/api/v1/pricing", pricingRouter);
+app.use("/api/v1/ai", aiRouter);
 
 app.get("/", (req, res) => {
   res.send("API running");

@@ -1,0 +1,204 @@
+[
+  {
+    "id": "faq_1",
+    "category": "booking",
+    "question": "How do I book a hotel?",
+    "answer": "You can search for hotels by location and dates. Once you find a hotel you like, select a room and proceed to booking. You can also ask me to 'Book a room for me' and I'll guide you through the process.",
+    "keywords": [
+      "book",
+      "booking",
+      "reserve",
+      "reservation",
+      "how to book"
+    ]
+  },
+  {
+    "id": "faq_2",
+    "category": "cancellation",
+    "question": "What is the cancellation policy?",
+    "answer": "You can cancel your booking through the AI assistant or the 'My Bookings' section. Full refunds are typically available if cancelled at least 24 hours before check-in. For late cancellations, a fee may apply depending on the hotel's specific policy.",
+    "keywords": [
+      "cancel",
+      "cancellation",
+      "refund",
+      "cancel booking",
+      "policy"
+    ]
+  },
+  {
+    "id": "faq_3",
+    "category": "payment",
+    "question": "What payment methods are supported?",
+    "answer": "We support various payment methods including Credit/Debit cards (via Stripe), Razorpay, and Pay at Hotel (Cash on Hotel). Payment availability depends on the hotel.",
+    "keywords": [
+      "payment",
+      "pay",
+      "credit card",
+      "debit card",
+      "upi",
+      "razorpay",
+      "stripe"
+    ]
+  },
+  {
+    "id": "faq_4",
+    "category": "support",
+    "question": "How can I contact the hotel owner?",
+    "answer": "Each hotel page has a 'Negotiate Rate' button where you can message the hotel owner directly for specific inquiries. You can also view their contact number on the hotel details page.",
+    "keywords": [
+      "contact",
+      "chat",
+      "message",
+      "owner",
+      "hotel owner",
+      "support"
+    ]
+  },
+  {
+    "id": "faq_5",
+    "category": "pricing",
+    "question": "Are there any discounts for long stays?",
+    "answer": "Many of our hotels offer special pricing for stays longer than a week. Look for the 'Special Offer' tag when searching. You can also check available coupons in Deals Page.",
+    "keywords": [
+      "discount",
+      "offers",
+      "coupon",
+      "long stay",
+      "special offer",
+      "deals"
+    ]
+  },
+  {
+    "id": "faq_6",
+    "category": "support",
+    "question": "What should I do if I have a problem with my room?",
+    "answer": "You should first contact the hotel front desk. If the issue is not resolved, you can use the chat feature in the app to message the owner or contact our customer support.",
+    "keywords": [
+      "problem",
+      "issue",
+      "complaint",
+      "room problem",
+      "not satisfied"
+    ]
+  },
+  {
+    "id": "faq_7",
+    "category": "amenities",
+    "question": "Is breakfast included in the booking?",
+    "answer": "Breakfast inclusion depends on the specific room type you select. Check the 'Amenities' section of the room details for more information. Some hotels offer complimentary breakfast.",
+    "keywords": [
+      "breakfast",
+      "meal",
+      "food",
+      "included",
+      "amenities",
+      "complimentary"
+    ]
+  },
+  {
+    "id": "faq_8",
+    "category": "booking",
+    "question": "Can I add more guests to my booking later?",
+    "answer": "Adding guests depends on the room capacity. It's best to cancel and rebook for the correct number of guests, or contact the hotel owner directly through the chat feature to discuss options.",
+    "keywords": [
+      "add guest",
+      "extra guest",
+      "modify booking",
+      "change booking",
+      "more people"
+    ]
+  },
+  {
+    "id": "faq_9",
+    "category": "features",
+    "question": "What is the Smart Recommendation feature?",
+    "answer": "Our AI-powered recommendation system analyzes your booking history, preferences, and search patterns to suggest hotels that match your taste. The more you use Smart Stay, the better the recommendations become.",
+    "keywords": [
+      "recommendation",
+      "suggest",
+      "ai",
+      "smart",
+      "personalized",
+      "suggestions"
+    ]
+  },
+  {
+    "id": "faq_10",
+    "category": "features",
+    "question": "How does the Waitlist feature work?",
+    "answer": "If a room you want is fully booked, you can join the waitlist. When a cancellation occurs or a room becomes available, we automatically notify you and give you priority booking. You'll receive an email and app notification.",
+    "keywords": [
+      "waitlist",
+      "fully booked",
+      "wait list",
+      "sold out",
+      "no availability"
+    ]
+  },
+  {
+    "id": "faq_11",
+    "category": "features",
+    "question": "What is the Dynamic Pricing?",
+    "answer": "Our dynamic pricing system adjusts room rates based on demand, seasonality, and occupancy levels. This means you might find better deals during off-peak times. Prices are calculated in real-time when you search.",
+    "keywords": [
+      "dynamic pricing",
+      "price change",
+      "rates",
+      "pricing",
+      "cost",
+      "why price different"
+    ]
+  },
+  {
+    "id": "faq_12",
+    "category": "account",
+    "question": "How do I reset my password?",
+    "answer": "Click on 'Forgot Password' on the login page. Enter your registered email, and we'll send you a password reset link valid for 15 minutes. Follow the link to set a new password.",
+    "keywords": [
+      "password",
+      "reset password",
+      "forgot password",
+      "change password",
+      "login problem"
+    ]
+  },
+  {
+    "id": "faq_13",
+    "category": "account",
+    "question": "Can I save my favorite hotels?",
+    "answer": "Yes! Click the heart icon on any hotel or room to add it to your Wishlist. You can view all your saved hotels in the 'Wishlist' section of your profile.",
+    "keywords": [
+      "wishlist",
+      "favorite",
+      "save hotel",
+      "bookmark",
+      "heart icon"
+    ]
+  },
+  {
+    "id": "faq_14",
+    "category": "reviews",
+    "question": "How can I leave a review?",
+    "answer": "You can leave a review only after your stay is completed. Go to 'My Bookings', select the completed booking, and click 'Write Review'. Your honest feedback helps other travelers.",
+    "keywords": [
+      "review",
+      "rating",
+      "feedback",
+      "write review",
+      "rate hotel"
+    ]
+  },
+  {
+    "id": "faq_15",
+    "category": "features",
+    "question": "What is the Availability Calendar?",
+    "answer": "The Availability Calendar shows real-time room availability for the next 30-90 days. Green dates mean rooms are available, yellow means limited availability, and red means fully booked. This helps you plan your trip better.",
+    "keywords": [
+      "calendar",
+      "availability",
+      "available dates",
+      "check availability",
+      "when available"
+    ]
+  }
+]
