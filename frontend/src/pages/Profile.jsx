@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios.config";
+import { useAuth } from "../context/AuthContext";
 import {
   User,
   Mail,
@@ -17,12 +18,10 @@ import toast from "react-hot-toast";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { user, loading, refreshUser, logout } = useAuth();
   const token = localStorage.getItem("accessToken");
 
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-
   const [form, setForm] = useState({ name: "", mobileNumber: "" });
   const [passwordForm, setPasswordForm] = useState({
     password: "",
@@ -30,33 +29,19 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    if (!token) {
-      navigate("/auth?redirect=/profile");
-      return;
+    if (user) {
+      setForm({
+        name: user.name || "",
+        mobileNumber: user.mobileNumber || "",
+      });
     }
+  }, [user]);
 
-    const fetchUser = async () => {
-      try {
-        const res = await api.get(`${import.meta.env.VITE_API_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.data.success) {
-          setUser(res.data.user);
-          setForm({
-            name: res.data.user.name || "",
-            mobileNumber: res.data.user.mobileNumber || "",
-          });
-        }
-      } catch {
-        navigate("/auth");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [navigate, token]);
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth?redirect=/profile");
+    }
+  }, [user, loading, navigate]);
 
   const handleUpdateProfile = async () => {
     try {
@@ -67,7 +52,7 @@ const Profile = () => {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      setUser(res.data.user);
+      await refreshUser();
       setEditing(false);
       toast.success("Profile updated successfully");
     } catch (err) {
@@ -97,7 +82,7 @@ const Profile = () => {
       await api.delete(`${import.meta.env.VITE_API_URL}/users/delete`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      localStorage.removeItem("accessToken");
+      logout();
       navigate("/auth");
     } catch {
       toast.error("Failed to delete account");

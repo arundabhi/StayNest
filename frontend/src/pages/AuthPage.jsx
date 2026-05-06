@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/axios.config";
+import { useAuth } from "../context/AuthContext";
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [params] = useSearchParams();
 
   const redirect = params.get("redirect")
@@ -62,7 +64,7 @@ const AuthPage = () => {
         },
         { withCredentials: true },
       );
-      localStorage.setItem("accessToken", res.data.accessToken);
+      await login(res.data.accessToken);
 
       navigate(redirect);
     } catch (err) {

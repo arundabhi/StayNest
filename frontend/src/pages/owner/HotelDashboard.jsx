@@ -34,6 +34,7 @@ import {
 import api from "../../api/axios.config";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
@@ -57,13 +58,15 @@ const OwnerDashboard = () => {
   const sseRef = useRef(null);
   const location = useLocation();
 
+  const { user } = useAuth();
+  
   useEffect(() => {
     let ownerId;
 
     const connectSSE = async () => {
       try {
-        const res = await api.get("/users/me");
-        ownerId = res.data.user._id;
+        if (!user) return;
+        ownerId = user._id;
 
         if (sseRef.current) return; // prevent duplicate connections
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/axios.config";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 import { ArrowLeft } from "lucide-react";
 
 import TripDetails from "../components/BookRoom/TripDetails";
@@ -29,7 +30,7 @@ const RoomBook = () => {
   const [bookingId, setBookingId] = useState(null);
   const [paymentMode, setPaymentMode] = useState("STRIPE");
   const [loading, setLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const { isLoggedIn } = useAuth();
   const [availabilityCalendar, setAvailabilityCalendar] = useState([]);
   const [isAvailable, setIsAvailable] = useState(true);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
@@ -198,22 +199,6 @@ const RoomBook = () => {
     hasShownBlockedToast.current = false;
   }, [dates.checkIn, dates.checkOut]);
 
-  /* ---------------- AUTH CHECK ---------------- */
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem("accessToken");
-      if (!token) return setIsLoggedIn(false);
-      try {
-        await api.get(`${import.meta.env.VITE_API_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setIsLoggedIn(true);
-      } catch {
-        setIsLoggedIn(false);
-      }
-    };
-    checkAuth();
-  }, []);
 
   /* ---------------- ACTIONS ---------------- */
   const applyCoupon = async () => {

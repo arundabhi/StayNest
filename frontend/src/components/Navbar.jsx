@@ -18,54 +18,17 @@ import {
   MessageSquare,
   Hotel,
 } from "lucide-react";
-import api from "../api/axios.config";
+import { useAuth } from "../context/AuthContext";
+
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState("user"); // Default role
   const [scrolled, setScrolled] = useState(false);
-  const [myHotelId, setMyHotelId] = useState(null);
+  
+  const { isLoggedIn, userRole, myHotelId, logout } = useAuth();
+  
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-
-    if (!token) {
-      setIsLoggedIn(false);
-      setUserRole("user");
-      setMyHotelId(null);
-      return;
-    }
-
-    const loadUser = async () => {
-      try {
-        const res = await api.get("/users/me");
-
-        const user = res.data.user;
-
-        setIsLoggedIn(true);
-        setUserRole(user.role);
-
-        if (user.role === "owner") {
-          const hotelRes = await api.get("/hotels/my/hotel");
-
-          if (hotelRes.data) {
-            console.log(hotelRes.data.hotels[0]._id);
-
-            setMyHotelId(hotelRes.data.hotels[0]._id);
-          }
-        }
-      } catch (err) {
-        console.log("Navbar auth failed:", err);
-        localStorage.clear();
-        setIsLoggedIn(false);
-      }
-    };
-
-    loadUser();
-  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -74,9 +37,7 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
-    setIsLoggedIn(false);
+    logout();
     setProfileOpen(false);
     navigate("/auth");
   };
