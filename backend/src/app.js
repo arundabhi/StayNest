@@ -23,8 +23,12 @@ import availabilityRouter from "./routes/availability.routes.js";
 import { apiLimiter } from "./middlewares/rateLimiter.js";
 import pricingRouter from "./routes/pricing.routes.js";
 import aiRouter from "./routes/ai.routes.js";
+import connectDb from "./db/index.js";
 
 const app = express();
+
+// Trust Vercel Proxy
+app.set("trust proxy", 1);
 
 app.use(
   cors({
@@ -41,6 +45,16 @@ app.use(cookieParser());
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Ensure DB is connected for every request (uses cached connection)
+app.use(async (req, res, next) => {
+  try {
+    await connectDb();
+    next();
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Database connection error" });
+  }
+});
 
 app.use("/api/v1", apiLimiter);
 
