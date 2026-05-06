@@ -24,7 +24,7 @@ const PriceDisplay = ({ hotelId, basePrice }) => {
     const fetchPricing = async () => {
       try {
         const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/pricing/${hotelId}`,
+          `/pricing/${hotelId}`,
         );
         if (res.data.success && res.data.pricing) {
           setFestivalOffer(res.data.pricing);
@@ -83,7 +83,7 @@ const Hotels = () => {
   useEffect(() => {
     const fetchHotels = async () => {
       try {
-        const res = await api.get(`${import.meta.env.VITE_API_URL}/hotels`);
+        const res = await api.get("/hotels");
         if (res.data.success) setHotels(res.data.hotels);
       } catch (err) {
         toast.error("Failed to load hotels");

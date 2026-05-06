@@ -46,11 +46,8 @@ const Profile = () => {
   const handleUpdateProfile = async () => {
     try {
       const res = await api.put(
-        `${import.meta.env.VITE_API_URL}/users/update`,
-        form,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        "/users/update",
+        form
       );
       await refreshUser();
       setEditing(false);
@@ -63,11 +60,8 @@ const Profile = () => {
   const handleChangePassword = async () => {
     try {
       await api.put(
-        `${import.meta.env.VITE_API_URL}/users/change-password`,
-        passwordForm,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        "/users/change-password",
+        passwordForm
       );
       setPasswordForm({ password: "", newPassword: "" });
       toast.success("Password changed successfully");
@@ -79,9 +73,7 @@ const Profile = () => {
   const handleDeleteAccount = async () => {
     if (!window.confirm("Are you sure? This action cannot be undone.")) return;
     try {
-      await api.delete(`${import.meta.env.VITE_API_URL}/users/delete`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete("/users/delete");
       logout();
       navigate("/auth");
     } catch {

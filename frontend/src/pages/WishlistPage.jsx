@@ -12,9 +12,7 @@ const WishlistPage = () => {
 
   const fetchWishlist = async () => {
     try {
-      const res = await api.get(`${import.meta.env.VITE_API_URL}/wishlists`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/wishlists");
       if (res.data.success) {
         setWishlist(res.data.wishlist);
       }
@@ -37,10 +35,7 @@ const WishlistPage = () => {
   const handleRemove = async (wishlistId) => {
     try {
       const res = await api.delete(
-        `${import.meta.env.VITE_API_URL}/wishlists/${wishlistId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        `/wishlists/${wishlistId}`
       );
       if (res.data.success) {
         setWishlist((prev) => prev.filter((item) => item._id !== wishlistId));

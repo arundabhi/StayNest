@@ -57,12 +57,11 @@ const AuthPage = () => {
       setError("");
 
       const res = await api.post(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
+        "/auth/login",
         {
           email: form.email,
           password: form.password,
-        },
-        { withCredentials: true },
+        }
       );
       await login(res.data.accessToken);
 
@@ -85,14 +84,13 @@ const AuthPage = () => {
       setError("");
 
       await api.post(
-        `${import.meta.env.VITE_API_URL}/auth/register`,
+        "/auth/register",
         {
           name: form.name,
           email: form.email,
           password: form.password,
           mobileNumber: form.mobileNumber,
-        },
-        { withCredentials: true },
+        }
       );
 
       navigate(redirect);
@@ -113,7 +111,7 @@ const AuthPage = () => {
       setLoading(true);
       setError("");
 
-      await api.post(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
+      await api.post("/auth/forgot-password", {
         email: form.email,
       });
 
@@ -136,7 +134,7 @@ const AuthPage = () => {
       setLoading(true);
       setError("");
 
-      await api.post(`${import.meta.env.VITE_API_URL}/auth/reset-password`, {
+      await api.post("/auth/reset-password", {
         otp: form.otp.trim(),
         email: form.email,
         newPassword: form.password,

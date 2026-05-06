@@ -20,8 +20,7 @@ const PersonalizedRecommendations = () => {
         }
 
         const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/recommendations/personalized`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          "/recommendations/personalized"
         );
 
         if (res.data.success) {
@@ -49,10 +48,7 @@ const PersonalizedRecommendations = () => {
       const checkStatus = async () => {
         try {
           const res = await api.get(
-            `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
+            `/wishlists/is-wishlisted/${hotelId}`
           );
           setIsWished(res.data.wishlisted);
         } catch (err) {
@@ -70,9 +66,8 @@ const PersonalizedRecommendations = () => {
       try {
         setWishLoading(true);
         const res = await api.post(
-          `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
-          { hotelId },
-          { headers: { Authorization: `Bearer ${token}` } },
+          "/wishlists/toggle",
+          { hotelId }
         );
         setIsWished(res.data.wished);
         toast.success(res.data.message);

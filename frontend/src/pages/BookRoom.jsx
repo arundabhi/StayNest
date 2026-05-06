@@ -76,8 +76,8 @@ const RoomBook = () => {
     const fetchData = async () => {
       try {
         const [hRes, rRes] = await Promise.all([
-          api.get(`${import.meta.env.VITE_API_URL}/hotels/${hotelId}`),
-          api.get(`${import.meta.env.VITE_API_URL}/rooms/${roomId}`),
+          api.get(`/hotels/${hotelId}`),
+          api.get(`/rooms/${roomId}`),
         ]);
         setData({ hotel: hRes.data.hotel, room: rRes.data.room });
       } catch (err) {
@@ -98,7 +98,7 @@ const RoomBook = () => {
         setAvailabilityLoading(true);
 
         const availRes = await api.get(
-          `${import.meta.env.VITE_API_URL}/availability/room/${roomId}/calendar`,
+          `/availability/room/${roomId}/calendar`,
           {
             params: {
               startDate: dates.checkIn,
@@ -141,7 +141,7 @@ const RoomBook = () => {
         }
 
         const priceRes = await api.get(
-          `${import.meta.env.VITE_API_URL}/bookings/price-preview/${hotelId}/${roomId}`,
+          `/bookings/price-preview/${hotelId}/${roomId}`,
           {
             params: {
               checkIn: dates.checkIn,
@@ -175,16 +175,11 @@ const RoomBook = () => {
     try {
       setLoading(true);
       await api.post(
-        `${import.meta.env.VITE_API_URL}/waitlists/${roomId}`,
+        `/waitlists/${roomId}`,
         {
           ...dates,
           totalGuest,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        },
+        }
       );
       toast.success("Added to waitlist! We'll notify you if a room opens up.");
       navigate("/user/waitlists");
@@ -206,13 +201,8 @@ const RoomBook = () => {
     try {
       setCoupon((prev) => ({ ...prev, loading: true }));
       const res = await api.post(
-        `${import.meta.env.VITE_API_URL}/coupons/validate`,
-        { code: coupon.code, bookingAmount: pricing.subtotal },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        },
+        "/coupons/validate",
+        { code: coupon.code, bookingAmount: pricing.subtotal }
       );
       setCoupon((prev) => ({ ...prev, applied: res.data, loading: false }));
 
@@ -238,19 +228,14 @@ const RoomBook = () => {
     try {
       setLoading(true);
       const res = await api.post(
-        `${import.meta.env.VITE_API_URL}/bookings/${hotelId}/${roomId}`,
+        `/bookings/${hotelId}/${roomId}`,
         {
           ...dates,
           totalGuest,
           paymentMode,
           couponCode: coupon.applied?.coupon.code || null,
           useSpecialOffer,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        },
+        }
       );
       setBookingId(res.data.booking._id);
       toast.success("Booking initiated!");

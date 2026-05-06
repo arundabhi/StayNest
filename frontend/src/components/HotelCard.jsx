@@ -32,10 +32,7 @@ const HotelCard = ({ hotel }) => {
     const checkStatus = async () => {
       try {
         const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotel._id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          `/wishlists/is-wishlisted/${hotel._id}`
         );
         setIsWishlisted(res.data.wishlisted);
       } catch (err) {
@@ -61,9 +58,8 @@ const HotelCard = ({ hotel }) => {
     try {
       setWishLoading(true);
       const res = await api.post(
-        `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
-        { hotelId: hotel._id },
-        { headers: { Authorization: `Bearer ${token}` } },
+        "/wishlists/toggle",
+        { hotelId: hotel._id }
       );
 
       setIsWishlisted(res.data.wished);

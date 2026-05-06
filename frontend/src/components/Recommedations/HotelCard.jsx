@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Star, MapPin, Heart, Sparkles, ArrowRight, Gift } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/axios.config";
 import toast from "react-hot-toast";
 
 const HotelCard = ({ hotel }) => {
@@ -24,9 +24,8 @@ const HotelCard = ({ hotel }) => {
     if (!token || !hotel) return;
     const checkWishlistStatus = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotel._id}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+        const res = await api.get(
+          `/wishlists/is-wishlisted/${hotel._id}`
         );
         setIsWished(res.data.wishlisted);
       } catch (err) {
@@ -40,8 +39,8 @@ const HotelCard = ({ hotel }) => {
   useEffect(() => {
     const fetchFestivalPricing = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/pricing/${hotel._id}`,
+        const res = await api.get(
+          `/pricing/${hotel._id}`,
         );
         if (res.data.success && res.data.pricing) {
           setFestivalOffer(res.data.pricing);
@@ -59,10 +58,9 @@ const HotelCard = ({ hotel }) => {
     if (!token) return toast.error("Please login to save hotels");
     try {
       setWishLoading(true);
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
-        { hotelId: hotel._id },
-        { headers: { Authorization: `Bearer ${token}` } },
+      const res = await api.post(
+        "/wishlists/toggle",
+        { hotelId: hotel._id }
       );
       setIsWished(res.data.wished);
       toast.success(res.data.message, { icon: res.data.wished ? "❤️" : "💔" });

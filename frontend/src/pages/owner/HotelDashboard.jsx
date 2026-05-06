@@ -71,7 +71,7 @@ const OwnerDashboard = () => {
         if (sseRef.current) return; // prevent duplicate connections
 
         const es = new EventSource(
-          `${import.meta.env.VITE_API_URL}/chats/sse/${ownerId}`,
+          `/chats/sse/${ownerId}`,
         );
 
         es.onopen = () => {

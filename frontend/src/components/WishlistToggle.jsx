@@ -13,10 +13,7 @@ const WishlistToggle = ({ hotelId }) => {
 
     api
       .get(
-        `${import.meta.env.VITE_API_URL}/wishlists/is-wishlisted/${hotelId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        `/wishlists/is-wishlisted/${hotelId}`
       )
       .then((res) => setIsWished(res.data.wishlisted))
       .catch(() => {});
@@ -33,11 +30,8 @@ const WishlistToggle = ({ hotelId }) => {
 
     try {
       const res = await api.post(
-        `${import.meta.env.VITE_API_URL}/wishlists/toggle`,
-        { hotelId }, // ✅ BODY
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
+        "/wishlists/toggle",
+        { hotelId }
       );
 
       setIsWished(res.data.wished);

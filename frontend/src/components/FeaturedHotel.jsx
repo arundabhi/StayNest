@@ -12,7 +12,7 @@ const FeaturedHotel = () => {
     setLoading(true);
     try {
       const response = await api.get(
-        `${import.meta.env.VITE_API_URL}/recommendations/top-rated`,
+        "/recommendations/top-rated",
       );
 
       if (response.data?.success && Array.isArray(response.data.hotels)) {

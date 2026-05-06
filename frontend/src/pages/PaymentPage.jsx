@@ -17,10 +17,7 @@ const Payment = () => {
     const fetchBooking = async () => {
       try {
         const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/bookings/my/${bookingId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          `/bookings/my/${bookingId}`
         );
 
         const bookingData = res.data.booking;
@@ -54,9 +51,7 @@ const Payment = () => {
       /* STRIPE */
       if (paymentMode === "STRIPE") {
         const res = await api.post(
-          `${import.meta.env.VITE_API_URL}/payment/stripe/${bookingId}`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } },
+          `/payment/stripe/${bookingId}`
         );
         window.location.href = res.data.sessionUrl;
         return;
@@ -65,9 +60,7 @@ const Payment = () => {
       /* RAZORPAY */
       if (paymentMode === "RAZORPAY") {
         const order = await api.post(
-          `${import.meta.env.VITE_API_URL}/payment/razorpay/${bookingId}`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } },
+          `/payment/razorpay/${bookingId}`
         );
 
         new window.Razorpay({
@@ -78,14 +71,13 @@ const Payment = () => {
           name: booking.hotelId.name,
           handler: async (resp) => {
             await api.post(
-              `${import.meta.env.VITE_API_URL}/payment/razorpay/verify`,
+              "/payment/razorpay/verify",
               {
                 bookingId,
                 razorpay_order_id: resp.razorpay_order_id,
                 razorpay_payment_id: resp.razorpay_payment_id,
                 razorpay_signature: resp.razorpay_signature,
-              },
-              { headers: { Authorization: `Bearer ${token}` } },
+              }
             );
             navigate(`/payment-success?bookingId=${bookingId}`);
           },
@@ -96,9 +88,7 @@ const Payment = () => {
       /* COD */
       if (paymentMode === "COD") {
         await api.post(
-          `${import.meta.env.VITE_API_URL}/payment/cod/${bookingId}`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } },
+          `/payment/cod/${bookingId}`
         );
         navigate("/bookings");
       }
