@@ -1,16 +1,19 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import RoomWishlistToggle from "../RoomWishlistToggle";
+import { useHotel } from "../../context/HotelContext";
 
-const HotelSuites = ({
-  filteredSuites,
-  festivalPricing,
-  selectedRoomType,
-  setSelectedRoomType,
-  handleBookingRedirect,
-}) => {
+const HotelSuites = ({ handleBookingRedirect }) => {
+  const {
+    filteredSuites,
+    festivalPricing,
+    selectedRoomType,
+    setSelectedRoomType,
+  } = useHotel();
+
   return (
     <section id="suites" className="scroll-mt-28 pt-6 border-t border-gray-100">
+
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 className="text-2xl font-bold text-gray-900">Available Rooms</h2>
         <div className="flex gap-2 flex-wrap">
@@ -18,11 +21,10 @@ const HotelSuites = ({
             <button
               key={type}
               onClick={() => setSelectedRoomType(type)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition border ${
-                selectedRoomType === type
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition border ${selectedRoomType === type
                   ? "bg-indigo-600 border-indigo-600 text-white"
                   : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-              }`}
+                }`}
             >
               {type}
             </button>

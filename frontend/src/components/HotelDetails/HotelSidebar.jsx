@@ -1,18 +1,21 @@
 import React from "react";
 import { Zap, Calendar, Users, Globe } from "lucide-react";
+import { useHotel } from "../../context/HotelContext";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-const HotelSidebar = ({
-  hotelData,
-  stayDates,
-  guests,
-  params,
-  navigate,
-  festivalPricing,
-  dynamicPricing,
-  handleDateChange,
-  handleCheckAvailability,
-  hotelId,
-}) => {
+const HotelSidebar = ({ handleCheckAvailability }) => {
+  const {
+    hotelData,
+    stayDates,
+    guests,
+    festivalPricing,
+    dynamicPricing,
+    handleDateChange,
+    hotelId,
+  } = useHotel();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+
   return (
     <aside className="lg:col-span-1">
       <div className="sticky top-24 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-5">
@@ -127,3 +130,4 @@ const HotelSidebar = ({
 };
 
 export default HotelSidebar;
+

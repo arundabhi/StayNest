@@ -19,9 +19,8 @@ const getRagLLM = () =>
   });
 
 
-const handleRAG = async (message) => {
+const handleRAG = async (message, history = []) => {
   const context = await queryRAG(message);
-
 
   const isEmpty =
     !context ||
@@ -35,7 +34,8 @@ const handleRAG = async (message) => {
   const llm = getRagLLM();
 
   const systemPrompt = `You are StayNest AI, a professional hotel booking assistant.
-Answer the user's question using ONLY the context provided below.
+Answer the user's question using the context provided below.
+CRITICAL: You MUST also consider the conversation history to understand what the user is referring to (e.g., if they say "which one is best", look at the previous hotels discussed).
 Keep your answer concise, accurate, and friendly.
 If the context does not fully answer the question, say so honestly — do not invent information.
 Do not mention "context" or "documents" in your reply — speak naturally as the assistant.`;
@@ -46,8 +46,18 @@ ${context}
 User question:
 ${message}`;
 
+  // Format history for the LLM
+  const historyMessages = history.map((msg) => {
+    const role = msg.role || msg.type || "";
+    const content = msg.content || msg.text || "";
+    return role.toLowerCase().includes("user") || role.toLowerCase().includes("human")
+      ? new HumanMessage(content)
+      : new SystemMessage(content); // Use SystemMessage for AI history to keep it compact
+  });
+
   const result = await llm.invoke([
     new SystemMessage(systemPrompt),
+    ...historyMessages,
     new HumanMessage(userPrompt),
   ]);
 
@@ -140,7 +150,7 @@ export const chatWithAI = async (req, res) => {
       console.log("[ROUTE]   → RAG");
       const t = performance.now();
 
-      response = await handleRAG(trimmedMessage);
+      response = await handleRAG(trimmedMessage, chatHistory);
 
       console.log(`[PERF]    RAG   : ${elapsed(t)}`);
 

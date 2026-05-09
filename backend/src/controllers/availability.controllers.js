@@ -255,119 +255,119 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
 };
 
 
-// export const getMonthViewCalendar = async (req, res) => {
-//   try {
-//     const { roomId, year, month } = req.query;
+export const getMonthViewCalendar = async (req, res) => {
+  try {
+    const { roomId, year, month } = req.query;
 
-//     if (!roomId || !year || !month) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Room ID, year, and month are required",
-//       });
-//     }
+    if (!roomId || !year || !month) {
+      return res.status(400).json({
+        success: false,
+        message: "Room ID, year, and month are required",
+      });
+    }
 
-//     const room = await Room.findById(roomId);
-//     if (!room) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Room not found",
-//       });
-//     }
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
 
-//     const firstDay = new Date(Number(year), Number(month) - 1, 1);
-//     const lastDay = new Date(Number(year), Number(month), 0);
+    const firstDay = new Date(Number(year), Number(month) - 1, 1);
+    const lastDay = new Date(Number(year), Number(month), 0);
 
-//     const bookings = await Booking.find({
-//       roomId,
-//       status: { $in: ["pending", "booked"] },
-//       $or: [
-//         { checkIn: { $lte: lastDay }, checkOut: { $gte: firstDay } },
-//       ],
-//     }).populate("userId", "name email");
+    const bookings = await Booking.find({
+      roomId,
+      status: { $in: ["pending", "booked"] },
+      $or: [
+        { checkIn: { $lte: lastDay }, checkOut: { $gte: firstDay } },
+      ],
+    }).populate("userId", "name email");
 
-//     const startDay = firstDay.getDay(); 
-//     const daysInMonth = lastDay.getDate();
+    const startDay = firstDay.getDay(); 
+    const daysInMonth = lastDay.getDate();
 
-//     const calendarGrid = [];
-//     let currentDate = new Date(firstDay);
-//     currentDate.setDate(currentDate.getDate() - startDay); 
+    const calendarGrid = [];
+    let currentDate = new Date(firstDay);
+    currentDate.setDate(currentDate.getDate() - startDay); 
 
    
-//     for (let i = 0; i < 42; i++) {
-//       const dateStr = currentDate.toISOString().split("T")[0];
-//       const isCurrentMonth = currentDate.getMonth() === Number(month) - 1;
+    for (let i = 0; i < 42; i++) {
+      const dateStr = currentDate.toISOString().split("T")[0];
+      const isCurrentMonth = currentDate.getMonth() === Number(month) - 1;
 
      
-//       const dayBookings = bookings.filter((booking) => {
-//         const bookingStart = new Date(booking.checkIn);
-//         const bookingEnd = new Date(booking.checkOut);
-//         bookingStart.setHours(0, 0, 0, 0);
-//         bookingEnd.setHours(0, 0, 0, 0);
-//         const checkDate = new Date(currentDate);
-//         checkDate.setHours(0, 0, 0, 0);
+      const dayBookings = bookings.filter((booking) => {
+        const bookingStart = new Date(booking.checkIn);
+        const bookingEnd = new Date(booking.checkOut);
+        bookingStart.setHours(0, 0, 0, 0);
+        bookingEnd.setHours(0, 0, 0, 0);
+        const checkDate = new Date(currentDate);
+        checkDate.setHours(0, 0, 0, 0);
 
-//         return checkDate >= bookingStart && checkDate < bookingEnd;
-//       });
+        return checkDate >= bookingStart && checkDate < bookingEnd;
+      });
 
-//       const bookedCount = dayBookings.length;
-//       const availableRooms = room.totalRooms - bookedCount;
+      const bookedCount = dayBookings.length;
+      const availableRooms = room.totalRooms - bookedCount;
 
-//       calendarGrid.push({
-//         date: dateStr,
-//         day: currentDate.getDate(),
-//         isCurrentMonth,
-//         dayOfWeek: currentDate.getDay(),
-//         totalRooms: room.totalRooms,
-//         bookedRooms: bookedCount,
-//         availableRooms,
-//         isFullyBooked: availableRooms === 0,
-//         bookings: isCurrentMonth ? dayBookings.map(b => ({
-//           id: b._id,
-//           guestName: b.userId?.name || "Guest",
-//           checkIn: b.checkIn,
-//           checkOut: b.checkOut,
-//           status: b.status,
-//         })) : [],
-//       });
+      calendarGrid.push({
+        date: dateStr,
+        day: currentDate.getDate(),
+        isCurrentMonth,
+        dayOfWeek: currentDate.getDay(),
+        totalRooms: room.totalRooms,
+        bookedRooms: bookedCount,
+        availableRooms,
+        isFullyBooked: availableRooms === 0,
+        bookings: isCurrentMonth ? dayBookings.map(b => ({
+          id: b._id,
+          guestName: b.userId?.name || "Guest",
+          checkIn: b.checkIn,
+          checkOut: b.checkOut,
+          status: b.status,
+        })) : [],
+      });
 
-//       currentDate.setDate(currentDate.getDate() + 1);
-//     }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
 
-//     const weeks = [];
-//     for (let i = 0; i < 6; i++) {
-//       weeks.push(calendarGrid.slice(i * 7, (i + 1) * 7));
-//     }
+    const weeks = [];
+    for (let i = 0; i < 6; i++) {
+      weeks.push(calendarGrid.slice(i * 7, (i + 1) * 7));
+    }
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Month view calendar fetched",
-//       room: {
-//         id: room._id,
-//         title: room.title,
-//         totalRooms: room.totalRooms,
-//       },
-//       month: {
-//         year: Number(year),
-//         month: Number(month),
-//         name: new Date(year, month - 1).toLocaleDateString("en-US", {
-//           month: "long",
-//           year: "numeric",
-//         }),
-//         firstDay: firstDay.toISOString().split("T")[0],
-//         lastDay: lastDay.toISOString().split("T")[0],
-//         daysInMonth,
-//       },
-//       weeks,
-//     });
-//   } catch (error) {
-//     console.error("Month view calendar error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//   }
-// };
+    return res.status(200).json({
+      success: true,
+      message: "Month view calendar fetched",
+      room: {
+        id: room._id,
+        title: room.title,
+        totalRooms: room.totalRooms,
+      },
+      month: {
+        year: Number(year),
+        month: Number(month),
+        name: new Date(year, month - 1).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
+        firstDay: firstDay.toISOString().split("T")[0],
+        lastDay: lastDay.toISOString().split("T")[0],
+        daysInMonth,
+      },
+      weeks,
+    });
+  } catch (error) {
+    console.error("Month view calendar error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 
 // export const quickAvailabilityCheck = async (req, res) => {
 //   try {

@@ -1,44 +1,14 @@
-import React, { useState, useEffect } from "react";
-import api from "../api/axios.config";
+import React from "react";
+import { useWishlist } from "../context/WishlistContext";
 import { Heart } from "lucide-react";
-import toast from "react-hot-toast";
 
 const WishlistToggle = ({ hotelId }) => {
-  const [isWished, setIsWished] = useState(false);
-  const token = localStorage.getItem("accessToken");
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const isWished = isInWishlist(hotelId);
 
-  // ✅ CHECK STATUS
-  useEffect(() => {
-    if (!token) return;
-
-    api
-      .get(
-        `/wishlists/is-wishlisted/${hotelId}`
-      )
-      .then((res) => setIsWished(res.data.wishlisted))
-      .catch(() => {});
-  }, [hotelId, token]);
-
-  // ✅ TOGGLE
   const handleToggle = async (e) => {
     e.stopPropagation();
-
-    if (!token) {
-      toast.error("Please login to save hotels");
-      return;
-    }
-
-    try {
-      const res = await api.post(
-        "/wishlists/toggle",
-        { hotelId }
-      );
-
-      setIsWished(res.data.wished);
-      toast.success(res.data.message);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update wishlist");
-    }
+    await toggleWishlist(hotelId);
   };
 
   return (
@@ -56,3 +26,4 @@ const WishlistToggle = ({ hotelId }) => {
 };
 
 export default WishlistToggle;
+

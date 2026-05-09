@@ -92,7 +92,17 @@ const AIChat = () => {
 
     const userMessage = input.trim();
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+
+    // If clearing chat, reset state immediately
+    if (userMessage.toLowerCase().includes("clear chat") || userMessage.toLowerCase().includes("reset chat")) {
+        setMessages([{
+            role: "assistant",
+            content: "👋 **Chat history cleared.** I'm ready to help you with a fresh start! What can I do for you?"
+        }]);
+    } else {
+        setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    }
+
     setIsLoading(true);
 
     try {
@@ -127,9 +137,13 @@ const AIChat = () => {
         throw new Error(response.data.message);
       }
     } catch (error) {
+      const errorMessage = error.response?.status === 401 
+        ? "Please login to chat with your StayNest Assistant." 
+        : "I'm having trouble connecting right now. Please try again in a moment.";
+      
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, I encountered an error. Please try again." },
+        { role: "assistant", content: errorMessage },
       ]);
     } finally {
       setIsLoading(false);

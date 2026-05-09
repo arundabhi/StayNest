@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios.config";
-import HotelCard from "./HotelCard";
+import HotelCard from "../HotelCard";
+import { useAuth } from "../../context/AuthContext";
 
 const RecommendationLayout = ({
   title,
@@ -11,38 +12,28 @@ const RecommendationLayout = ({
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { isLoggedIn, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchRecommendations = async () => {
+      // Wait for auth to initialize
+      if (authLoading) return;
+
+      if (requiresAuth && !isLoggedIn) {
+        setError("Login required");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const headers = {};
+        const res = await api.get(endpoint);
 
-        if (requiresAuth) {
-          const token = localStorage.getItem("accessToken");
-          if (!token) {
-            setError("Login required");
-            setLoading(false);
-            return;
-          }
-          headers.Authorization = `Bearer ${token}`;
-        }
-
-        const res = await api.get(
-          `${import.meta.env.VITE_API_URL}${endpoint}`,
-          { headers },
-        );
-
-        /**
-         * Supports ALL your APIs:
-         * - hotels
-         * - recommendations
-         * - offers
-         */
         const list =
           res.data.hotels || res.data.recommendations || res.data.offers || [];
 
         const finalData = transform ? list.map(transform) : list;
         setHotels(finalData);
+        setError(""); // Clear previous errors
       } catch (err) {
         setError(
           err.response?.data?.message || "Failed to load recommendations",
@@ -53,28 +44,34 @@ const RecommendationLayout = ({
     };
 
     fetchRecommendations();
-  }, [endpoint, transform, requiresAuth]);
+  }, [endpoint, transform, requiresAuth, isLoggedIn, authLoading]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <section className="py-10">
+      <section className="py-10 max-w-7xl mx-auto px-4">
         <h2 className="text-2xl font-bold mb-4">{title}</h2>
-        <p className="text-gray-500">Loading...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-64 bg-gray-100 animate-pulse rounded-2xl" />
+          ))}
+        </div>
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="py-10">
+      <section className="max-w-7xl mx-auto px-4 py-10">
         <h2 className="text-2xl font-bold mb-4">{title}</h2>
-        <p className="text-red-500">{error}</p>
+        <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm">
+          {error}
+        </div>
       </section>
     );
   }
 
   if (hotels.length === 0) {
-    return null; // hide section if empty
+    return null;
   }
 
   return (
@@ -84,7 +81,7 @@ const RecommendationLayout = ({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {hotels.map((hotel) => (
+        {hotels.slice(0, 4).map((hotel) => (
           <HotelCard
             key={hotel._id}
             hotel={hotel}

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios.config";
 import toast from "react-hot-toast";
 import { MapPin, Star, Share, Heart } from "lucide-react";
@@ -12,40 +12,32 @@ import HotelSidebar from "../components/HotelDetails/HotelSidebar";
 import HotelReviews from "../components/HotelDetails/HotelReviews";
 import SimilarHotelsList from "../components/HotelDetails/SimilarHotelsList";
 import HotelGalleryModal from "../components/HotelDetails/HotelGalleryModal";
+import { HotelProvider, useHotel } from "../context/HotelContext";
 
-const HotelDetails = () => {
-  const { hotelId } = useParams();
-  const [params] = useSearchParams();
+const HotelDetailsContent = () => {
+  const {
+    hotelId,
+    hotelData,
+    rooms,
+    reviews,
+    similarHotels,
+    loading,
+    stayDates,
+    guests,
+    festivalPricing,
+    dynamicPricing,
+    handleDateChange,
+    refreshData
+  } = useHotel();
+
   const navigate = useNavigate();
-
-  const [stayDates, setStayDates] = useState({
-    checkIn: params.get("checkIn") || "",
-    checkOut: params.get("checkOut") || "",
-  });
-  const [hotelData, setHotelData] = useState(null);
-  const [rooms, setRooms] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [standardOffer, setStandardOffer] = useState(null);
-  const [festivalPricing, setFestivalPricing] = useState(null);
-  const [similarHotels, setSimilarHotels] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [selectedRoomType, setSelectedRoomType] = useState("All");
   const [isWished, setIsWished] = useState(false);
   const [wishLoading, setWishLoading] = useState(false);
   const token = localStorage.getItem("accessToken");
 
-  const checkIn = stayDates.checkIn;
-  const checkOut = stayDates.checkOut;
-  const guests = params.get("guests") || "1";
-
-  const handleDateChange = (field, value) => {
-    setStayDates((prev) => ({ ...prev, [field]: value }));
-    const newParams = new URLSearchParams(params);
-    newParams.set(field, value);
-    navigate({ search: newParams.toString() }, { replace: true });
-  };
+  const { checkIn, checkOut } = stayDates;
 
   const scrollToSection = (sectionId) => {
     setActiveTab(sectionId);
@@ -84,59 +76,6 @@ const HotelDetails = () => {
       .then((res) => setIsWished(res.data.wishlisted))
       .catch(() => {});
   }, [hotelId, token]);
-
-  const loadMasterData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [hotelR, roomR, revR, offR, festR, simR] = await Promise.all([
-        api.get(`/hotels/${hotelId}`),
-        api.get(`/rooms/hotel/${hotelId}`),
-        api.get(`/reviews/hotel/${hotelId}`),
-        api
-          .get(`/recommendations/offer/${hotelId}`)
-          .catch(() => ({ data: { success: false } })),
-        api
-          .get(`/pricing/${hotelId}`)
-          .catch(() => ({ data: { success: false } })),
-        api
-          .get(`/recommendations/similar/${hotelId}`)
-          .catch(() => ({ data: { success: false } })),
-      ]);
-      if (hotelR.data.success) setHotelData(hotelR.data.hotel);
-      if (roomR.data.success) setRooms(roomR.data.rooms);
-      if (revR.data.success) setReviews(revR.data.reviews);
-      if (offR.data.success) setStandardOffer(offR.data.offer);
-      if (festR.data.success) setFestivalPricing(festR.data.pricing);
-      if (simR.data.success) setSimilarHotels(simR.data.hotels);
-    } catch {
-      toast.error("Failed to load hotel details. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [hotelId]);
-
-  useEffect(() => {
-    loadMasterData();
-    window.scrollTo(0, 0);
-  }, [loadMasterData]);
-
-  const dynamicPricing = useMemo(() => {
-    if (!hotelData) return { finalPrice: 0, discount: 0 };
-    if (festivalPricing?.multiplier) {
-      return {
-        finalPrice: Math.round(
-          hotelData.basePrice * festivalPricing.multiplier,
-        ),
-        discount: Math.round((1 - festivalPricing.multiplier) * 100),
-      };
-    }
-    return { finalPrice: hotelData.basePrice, discount: 0 };
-  }, [hotelData, festivalPricing]);
-
-  const filteredSuites = useMemo(() => {
-    if (selectedRoomType === "All") return rooms;
-    return rooms.filter((r) => r.roomType === selectedRoomType);
-  }, [rooms, selectedRoomType]);
 
   const handleCheckAvailability = async () => {
     if (!checkIn || !checkOut) {
@@ -299,27 +238,12 @@ const HotelDetails = () => {
             <HotelAmenities hotelData={hotelData} />
 
             {/* ROOMS */}
-            <HotelSuites
-              filteredSuites={filteredSuites}
-              festivalPricing={festivalPricing}
-              selectedRoomType={selectedRoomType}
-              setSelectedRoomType={setSelectedRoomType}
-              handleBookingRedirect={handleBookingRedirect}
-            />
+            <HotelSuites handleBookingRedirect={handleBookingRedirect} />
           </div>
 
           {/* SIDEBAR */}
           <HotelSidebar
-            hotelData={hotelData}
-            stayDates={stayDates}
-            guests={guests}
-            params={params}
-            navigate={navigate}
-            festivalPricing={festivalPricing}
-            dynamicPricing={dynamicPricing}
-            handleDateChange={handleDateChange}
             handleCheckAvailability={handleCheckAvailability}
-            hotelId={hotelId}
           />
         </div>
 
@@ -340,4 +264,11 @@ const HotelDetails = () => {
   );
 };
 
+const HotelDetails = () => (
+  <HotelProvider>
+    <HotelDetailsContent />
+  </HotelProvider>
+);
+
 export default HotelDetails;
+

@@ -1,72 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../api/axios.config";
 import {
-  MapPin,
-  Star,
-  Heart,
-  ArrowRight,
   ShieldCheck,
   Search,
   SlidersHorizontal,
-  Gift,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import HotelCard from "../components/HotelCard";
 
 const AMENITIES = ["wifi", "parking", "pool", "gym", "spa", "restaurant", "ac"];
 
-/* ---------------- PRICE COMPONENT ---------------- */
-
-const PriceDisplay = ({ hotelId, basePrice }) => {
-  const [festivalOffer, setFestivalOffer] = useState(null);
-
-  useEffect(() => {
-    const fetchPricing = async () => {
-      try {
-        const res = await api.get(
-          `/pricing/${hotelId}`,
-        );
-        if (res.data.success && res.data.pricing) {
-          setFestivalOffer(res.data.pricing);
-        }
-      } catch {}
-    };
-    fetchPricing();
-  }, [hotelId]);
-
-  const finalPrice = festivalOffer
-    ? basePrice * festivalOffer.multiplier
-    : basePrice;
-
-  return (
-    <div className="flex flex-col">
-      {festivalOffer && (
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full uppercase tracking-widest flex items-center gap-1">
-            <Gift size={10} /> {festivalOffer.name} Offer
-          </span>
-          <span className="text-xs text-gray-400 line-through font-bold">
-            ₹{basePrice.toLocaleString()}
-          </span>
-        </div>
-      )}
-      <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-black text-gray-900">
-          ₹{finalPrice.toLocaleString()}
-        </span>
-        <span className="text-gray-400 text-[10px] font-bold uppercase">
-          / night
-        </span>
-      </div>
-    </div>
-  );
-};
-
-/* ---------------- MAIN COMPONENT ---------------- */
-
 const Hotels = () => {
-  const navigate = useNavigate();
-
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -140,7 +84,14 @@ const Hotels = () => {
     setMinRating(0);
   };
 
-  /* ---------------- UI ---------------- */
+  if (loading) {
+      return (
+          <div className="bg-[#FAFBFF] min-h-screen pt-40 flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+              <p className="text-gray-500 font-medium">Loading premium stays...</p>
+          </div>
+      );
+  }
 
   return (
     <div className="bg-[#FAFBFF] min-h-screen pt-24 pb-20">
@@ -176,7 +127,7 @@ const Hotels = () => {
 
           {/* FILTER DRAWER */}
           {showFilters && (
-            <div className="mt-6 bg-white rounded-3xl p-8 shadow-xl space-y-8">
+            <div className="mt-6 bg-white rounded-3xl p-8 shadow-xl space-y-8 animate-in fade-in slide-in-from-top-4 duration-300">
               {/* PRICE */}
               <div>
                 <label className="block text-xs font-bold uppercase mb-3">
@@ -204,7 +155,7 @@ const Hotels = () => {
                 <select
                   value={minRating}
                   onChange={(e) => setMinRating(Number(e.target.value))}
-                  className="w-full p-3 bg-gray-50 rounded-xl"
+                  className="w-full p-3 bg-gray-50 rounded-xl outline-none"
                 >
                   <option value="0">All</option>
                   <option value="3">3★ & above</option>
@@ -243,7 +194,7 @@ const Hotels = () => {
                 <select
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
-                  className="w-full p-3 bg-gray-50 rounded-xl"
+                  className="w-full p-3 bg-gray-50 rounded-xl outline-none"
                 >
                   <option value="">Default</option>
                   <option value="low-high">Price: Low to High</option>
@@ -263,43 +214,21 @@ const Hotels = () => {
         </div>
 
         {/* HOTEL GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
           {filteredHotels.map((hotel) => (
-            <div
-              key={hotel._id}
-              onClick={() => navigate(`/hotels/${hotel._id}`)}
-              className="group bg-white rounded-3xl border shadow-sm hover:shadow-xl transition overflow-hidden cursor-pointer"
-            >
-              <img
-                src={
-                  hotel.images?.[0] ||
-                  "https://images.unsplash.com/photo-1566073771259-6a8506099945"
-                }
-                alt={hotel.name}
-                className="h-64 w-full object-cover group-hover:scale-105 transition"
-              />
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">{hotel.name}</h3>
-                <p className="text-sm text-gray-400 flex items-center gap-1 mb-4">
-                  <MapPin size={14} /> {hotel.city}
-                </p>
-
-                <div className="flex justify-between items-center">
-                  <PriceDisplay
-                    hotelId={hotel._id}
-                    basePrice={hotel.basePrice}
-                  />
-                  <div className="bg-gray-900 text-white p-3 rounded-xl">
-                    <ArrowRight size={18} />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <HotelCard key={hotel._id} hotel={hotel} />
           ))}
         </div>
+
+        {filteredHotels.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-gray-400 font-bold uppercase tracking-widest">No stays found matching your criteria</p>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default Hotels;
+

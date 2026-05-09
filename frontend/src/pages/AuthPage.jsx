@@ -12,7 +12,6 @@ const AuthPage = () => {
     ? decodeURIComponent(params.get("redirect"))
     : "/";
 
-  // modes: login | register | forgot | reset
   const [mode, setMode] = useState("login");
 
   const [form, setForm] = useState({
@@ -26,7 +25,6 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /* ---------------- HELPERS ---------------- */
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -46,7 +44,6 @@ const AuthPage = () => {
     });
   };
 
-  /* ---------------- LOGIN ---------------- */
   const handleLogin = async () => {
     if (!form.email || !form.password) {
       return setError("Email and password are required");
@@ -73,7 +70,7 @@ const AuthPage = () => {
     }
   };
 
-  /* ---------------- REGISTER ---------------- */
+
   const handleRegister = async () => {
     if (!form.name || !form.email || !form.password || !form.mobileNumber) {
       return setError("All fields are required");
@@ -83,7 +80,7 @@ const AuthPage = () => {
       setLoading(true);
       setError("");
 
-      await api.post(
+      const res = await api.post(
         "/auth/register",
         {
           name: form.name,
@@ -93,6 +90,11 @@ const AuthPage = () => {
         }
       );
 
+
+      if (res.data.accessToken) {
+        await login(res.data.accessToken);
+      }
+
       navigate(redirect);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
@@ -101,7 +103,6 @@ const AuthPage = () => {
     }
   };
 
-  /* ---------------- FORGOT PASSWORD ---------------- */
   const handleForgotPassword = async () => {
     if (!form.email) {
       return setError("Email is required");
@@ -115,7 +116,7 @@ const AuthPage = () => {
         email: form.email,
       });
 
-      // go to reset step
+
       switchMode("reset");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP");
@@ -124,7 +125,7 @@ const AuthPage = () => {
     }
   };
 
-  /* ---------------- RESET PASSWORD ---------------- */
+
   const handleResetPassword = async () => {
     if (!form.email || !form.otp || !form.password) {
       return setError("All fields are required");
@@ -140,7 +141,7 @@ const AuthPage = () => {
         newPassword: form.password,
       });
 
-      // back to login after success
+
       switchMode("login");
     } catch (err) {
       setError(err.response?.data?.message || "Password reset failed");
@@ -149,7 +150,7 @@ const AuthPage = () => {
     }
   };
 
-  /* ---------------- UI ---------------- */
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
@@ -166,7 +167,7 @@ const AuthPage = () => {
           </div>
         )}
 
-        {/* REGISTER */}
+
         {mode === "register" && (
           <>
             <input
@@ -186,7 +187,7 @@ const AuthPage = () => {
           </>
         )}
 
-        {/* EMAIL */}
+
         <input
           type="email"
           name="email"
@@ -195,7 +196,7 @@ const AuthPage = () => {
           className="input"
         />
 
-        {/* PASSWORD */}
+
         {(mode === "login" || mode === "register" || mode === "reset") && (
           <input
             type="password"
@@ -206,7 +207,7 @@ const AuthPage = () => {
           />
         )}
 
-        {/* OTP */}
+
         {mode === "reset" && (
           <input
             type="text"
@@ -217,7 +218,7 @@ const AuthPage = () => {
           />
         )}
 
-        {/* ACTION BUTTON */}
+
         <button
           type="button"
           disabled={loading}
@@ -235,7 +236,7 @@ const AuthPage = () => {
           {loading ? "Please wait..." : "Continue"}
         </button>
 
-        {/* LINKS */}
+
         <div className="text-center text-sm mt-6 space-y-2">
           {mode === "login" && (
             <>
