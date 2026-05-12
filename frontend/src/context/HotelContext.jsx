@@ -33,24 +33,31 @@ export const HotelProvider = ({ children }) => {
   };
 
   const loadMasterData = useCallback(async () => {
+    if (!hotelId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [hotelR, roomR, revR, offR, festR, simR] = await Promise.all([
-        api.get(`/hotels/${hotelId}`),
-        api.get(`/rooms/hotel/${hotelId}`),
-        api.get(`/reviews/hotel/${hotelId}`),
+        api.get(`/hotels/${hotelId}`).catch((err) => err.response || { data: { success: false } }),
+        api.get(`/rooms/hotel/${hotelId}`).catch((err) => err.response || { data: { success: false } }),
+        api.get(`/reviews/hotel/${hotelId}`).catch((err) => err.response || { data: { success: false } }),
         api.get(`/recommendations/offer/${hotelId}`).catch(() => ({ data: { success: false } })),
         api.get(`/pricing/${hotelId}`).catch(() => ({ data: { success: false } })),
         api.get(`/recommendations/similar/${hotelId}`).catch(() => ({ data: { success: false } })),
       ]);
 
-      if (hotelR.data.success) setHotelData(hotelR.data.hotel);
-      if (roomR.data.success) setRooms(roomR.data.rooms);
-      if (revR.data.success) setReviews(revR.data.reviews);
-      if (offR.data.success) setStandardOffer(offR.data.offer);
-      if (festR.data.success) setFestivalPricing(festR.data.pricing);
-      if (simR.data.success) setSimilarHotels(simR.data.hotels);
-    } catch {
+      if (hotelR.data?.success) setHotelData(hotelR.data.hotel);
+      else throw new Error("Hotel not found"); // Critical
+
+      if (roomR.data?.success) setRooms(roomR.data.rooms);
+      if (revR.data?.success) setReviews(revR.data.reviews);
+      if (offR.data?.success) setStandardOffer(offR.data.offer);
+      if (festR.data?.success) setFestivalPricing(festR.data.pricing);
+      if (simR.data?.success) setSimilarHotels(simR.data.hotels);
+    } catch (error) {
+      console.error("Hotel data load error:", error);
       toast.error("Failed to load hotel details. Please try again.");
     } finally {
       setLoading(false);
@@ -58,8 +65,15 @@ export const HotelProvider = ({ children }) => {
   }, [hotelId]);
 
   useEffect(() => {
-    loadMasterData();
-  }, [loadMasterData]);
+    if (hotelId) {
+      setHotelData(null);
+      setRooms([]);
+      setReviews([]);
+      loadMasterData();
+    } else {
+      setLoading(false);
+    }
+  }, [loadMasterData, hotelId]);
 
   const dynamicPricing = useMemo(() => {
     if (!hotelData) return { finalPrice: 0, discount: 0 };
@@ -98,6 +112,8 @@ export const HotelProvider = ({ children }) => {
 
   return <HotelContext.Provider value={value}>{children}</HotelContext.Provider>;
 };
+
+
 
 export const useHotel = () => {
   const context = useContext(HotelContext);

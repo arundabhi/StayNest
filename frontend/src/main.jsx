@@ -8,8 +8,7 @@ import {
 } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
-import { AuthProvider } from "./context/AuthContext.jsx";
-import { WishlistProvider } from "./context/WishlistContext.jsx";
+import { AppProvider } from "./context/CombinedContext.jsx";
 
 import Layout from "./components/Layout";
 
@@ -90,11 +89,7 @@ const router = createBrowserRouter(
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <AuthProvider>
-      <WishlistProvider>
-        <RouterProvider router={router} />
-      </WishlistProvider>
-    </AuthProvider>
+    <RouterProvider router={router} />
   </StrictMode>,
 );
 

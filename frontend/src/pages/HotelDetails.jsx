@@ -12,9 +12,9 @@ import HotelSidebar from "../components/HotelDetails/HotelSidebar";
 import HotelReviews from "../components/HotelDetails/HotelReviews";
 import SimilarHotelsList from "../components/HotelDetails/SimilarHotelsList";
 import HotelGalleryModal from "../components/HotelDetails/HotelGalleryModal";
-import { HotelProvider, useHotel } from "../context/HotelContext";
+import { useHotel } from "../context/CombinedContext";
 
-const HotelDetailsContent = () => {
+const HotelDetails = () => {
   const {
     hotelId,
     hotelData,
@@ -68,7 +68,7 @@ const HotelDetailsContent = () => {
   }, []);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !hotelId) return;
     api
       .get(`/wishlists/is-wishlisted/${hotelId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -264,11 +264,4 @@ const HotelDetailsContent = () => {
   );
 };
 
-const HotelDetails = () => (
-  <HotelProvider>
-    <HotelDetailsContent />
-  </HotelProvider>
-);
-
 export default HotelDetails;
-

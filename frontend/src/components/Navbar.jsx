@@ -24,9 +24,9 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  
-  const { isLoggedIn, userRole, myHotelId, logout } = useAuth();
-  
+
+  const { isLoggedIn, userRole, myHotelId, logout, user } = useAuth();
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -83,11 +83,10 @@ const Navbar = () => {
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? "py-2" : "py-4"}`}
     >
       <nav
-        className={`mx-auto max-w-7xl px-4 sm:px-6 transition-all duration-500 ${
-          scrolled
-            ? "bg-white/90 backdrop-blur-xl shadow-lg shadow-blue-500/5 border border-slate-200/60 rounded-3xl"
-            : "bg-transparent"
-        }`}
+        className={`mx-auto max-w-7xl px-4 sm:px-6 transition-all duration-500 ${scrolled
+          ? "bg-white/90 backdrop-blur-xl shadow-lg shadow-blue-500/5 border border-slate-200/60 rounded-3xl"
+          : "bg-transparent"
+          }`}
       >
         <div className="flex items-center h-16 md:h-20">
           {/* LEFT: LOGO */}
@@ -118,11 +117,10 @@ const Navbar = () => {
                 key={link.name}
                 disabled={!link.path}
                 onClick={() => link.path && navigate(link.path)}
-                className={`px-6 py-2 text-sm font-bold rounded-full transition-all duration-300 flex items-center gap-2 ${
-                  link.path && isActive(link.path)
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-900"
-                } ${!link.path ? "opacity-40 cursor-not-allowed" : ""}`}
+                className={`px-6 py-2 text-sm font-bold rounded-full transition-all duration-300 flex items-center gap-2 ${link.path && isActive(link.path)
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+                  } ${!link.path ? "opacity-40 cursor-not-allowed" : ""}`}
               >
                 {link.name}
               </button>
@@ -135,11 +133,10 @@ const Navbar = () => {
             {userRole !== "owner" ? (
               <button
                 onClick={() => navigate("/list-property")}
-                className={`hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border ${
-                  scrolled
-                    ? "border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white"
-                    : "border-white/20 text-slate-900 bg-white shadow-sm hover:shadow-md"
-                }`}
+                className={`hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border ${scrolled
+                  ? "border-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white"
+                  : "border-white/20 text-slate-900 bg-white shadow-sm hover:shadow-md"
+                  }`}
               >
                 <PlusCircle size={16} />
                 List Property
@@ -171,15 +168,20 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="relative">
+
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="flex items-center gap-2 p-1.5 rounded-2xl border border-slate-200 bg-white hover:border-blue-300 transition-all"
                 >
+
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center text-white ${userRole === "owner" ? "bg-blue-600" : "bg-slate-900"}`}
                   >
                     <User size={16} />
+
                   </div>
+
+                  {user.name}
                   <ChevronDown
                     size={14}
                     className={`text-slate-400 transition-transform hidden sm:block ${profileOpen ? "rotate-180" : ""}`}
@@ -306,11 +308,10 @@ const Navbar = () => {
                   navigate(link.path);
                   setOpen(false);
                 }}
-                className={`w-full text-left p-4 rounded-2xl font-bold flex items-center gap-3 ${
-                  link.path && isActive(link.path)
-                    ? "bg-blue-50 text-blue-600"
-                    : "text-slate-700 hover:bg-slate-50"
-                } ${!link.path ? "opacity-40 cursor-not-allowed" : ""}`}
+                className={`w-full text-left p-4 rounded-2xl font-bold flex items-center gap-3 ${link.path && isActive(link.path)
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-slate-700 hover:bg-slate-50"
+                  } ${!link.path ? "opacity-40 cursor-not-allowed" : ""}`}
               >
                 {link.icon} {link.name}
               </button>
