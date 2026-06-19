@@ -438,3 +438,140 @@ export const expireWaitlistEntries = async () => {
     console.error("Expire waitlist error:", error);
   }
 };
+
+export const getHotelWaitlist = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    const userId = req.userId;
+
+    if (!hotelId) {
+      return res.status(400).json({
+        success: false,
+        message: "Hotel ID is required",
+      });
+    }
+
+    const hotel = await Hotel.findOne({ _id: hotelId, owner: userId });
+    if (!hotel) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to access this hotel waitlist",
+      });
+    }
+
+    const waitlists = await Waitlist.find({ hotelId, status: "waiting" })
+      .populate("userId", "name email")
+      .populate("roomId", "title roomType pricePerDay")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({
+      success: true,
+      waitlists,
+    });
+  } catch (error) {
+    console.error("Get hotel waitlist error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const promoteSpecificWaitlist = async (req, res) => {
+  try {
+    const { waitlistId } = req.params;
+    const userId = req.userId;
+
+    if (!waitlistId) {
+      return res.status(400).json({
+        success: false,
+        message: "Waitlist ID is required",
+      });
+    }
+
+    const waitlist = await Waitlist.findById(waitlistId);
+    if (!waitlist) {
+      return res.status(404).json({
+        success: false,
+        message: "Waitlist entry not found",
+      });
+    }
+
+    const hotel = await Hotel.findOne({ _id: waitlist.hotelId, owner: userId });
+    if (!hotel) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to manage this hotel",
+      });
+    }
+
+    const room = await Room.findById(waitlist.roomId);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
+
+    const activeBookings = await Booking.countDocuments({
+      roomId: room._id,
+      status: { $in: ["pending", "booked"] },
+    });
+
+    if (activeBookings >= room.totalRooms) {
+      return res.status(400).json({
+        success: false,
+        message: "No rooms available to promote waitlist",
+      });
+    }
+
+    const existingBooking = await Booking.findOne({
+      userId: waitlist.userId,
+      roomId: room._id,
+      status: { $in: ["pending", "booked"] },
+    });
+
+    if (existingBooking) {
+      waitlist.status = "expired";
+      await waitlist.save();
+
+      return res.status(400).json({
+        success: false,
+        message: "User already has an active booking",
+      });
+    }
+
+    const diffDays = Math.max(1, Math.ceil(
+      (waitlist.checkOut - waitlist.checkIn) / (1000 * 60 * 60 * 24)
+    ));
+    const totalPrice = room.pricePerDay * diffDays;
+
+    const booking = await Booking.create({
+      userId: waitlist.userId,
+      hotelId: waitlist.hotelId,
+      roomId: waitlist.roomId,
+      checkIn: waitlist.checkIn,
+      checkOut: waitlist.checkOut,
+      totalGuest: waitlist.totalGuest,
+      totalPrice,
+      status: "booked",
+      paymentStatus: "pending",
+      paymentMode: "COD",
+    });
+
+    waitlist.status = "promoted";
+    await waitlist.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Waitlist user promoted and booking confirmed successfully",
+      booking,
+    });
+  } catch (error) {
+    console.error("Promote specific waitlist error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

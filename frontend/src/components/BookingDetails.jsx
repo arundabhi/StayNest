@@ -36,15 +36,8 @@ const BookingDetails = () => {
   useEffect(() => {
     const fetchBooking = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) {
-          navigate(`/auth?redirect=/bookings/my/${bookingId}`);
-          return;
-        }
-
         const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/bookings/my/${bookingId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `/bookings/my/${bookingId}`
         );
 
         if (res.data.success) {
@@ -57,14 +50,12 @@ const BookingDetails = () => {
       }
     };
     fetchBooking();
-  }, [bookingId, navigate]);
+  }, [bookingId]);
 
   const getPaymentDetails = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
       const res = await api.get(
-        `${import.meta.env.VITE_API_URL}/payment/my/${bookingId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `/payment/my/${bookingId}`
       );
       setPaymentDetails(res.data.payment);
       setIsPaymentModalOpen(true);
@@ -84,9 +75,8 @@ const BookingDetails = () => {
     setSubmittingReview(true);
     try {
       await api.post(
-        `${import.meta.env.VITE_API_URL}/reviews/${booking.hotelId._id}/${booking.roomId._id}`,
-        { rating, message: comment },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` } }
+        `/reviews/${booking.hotelId._id}/${booking.roomId._id}`,
+        { rating, message: comment }
       );
       toast.success("Review submitted! Thank you.");
       setShowReviewForm(false);

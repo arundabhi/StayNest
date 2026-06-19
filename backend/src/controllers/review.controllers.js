@@ -257,18 +257,43 @@ export const getHotelRating = async (req, res) => {
       });
     }
 
-    const stats = await Review.aggregate([
-      {
-        $match: {
-          hotelId: new mongoose.Types.ObjectId(hotelId),
+    const [stats, trend] = await Promise.all([
+      Review.aggregate([
+        {
+          $match: {
+            hotelId: new mongoose.Types.ObjectId(hotelId),
+          },
         },
-      },
-      {
-        $group: {
-          _id: "$rating",
-          count: { $sum: 1 },
+        {
+          $group: {
+            _id: "$rating",
+            count: { $sum: 1 },
+          },
         },
-      },
+      ]),
+      Review.aggregate([
+        {
+          $match: {
+            hotelId: new mongoose.Types.ObjectId(hotelId),
+            createdAt: {
+              $gte: new Date(
+                new Date().setMonth(new Date().getMonth() - 6)
+              ),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+            },
+            avgRating: { $avg: "$rating" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } },
+      ]),
     ]);
 
     const totalReviews = stats.reduce((sum, item) => sum + item.count, 0);
@@ -300,6 +325,7 @@ export const getHotelRating = async (req, res) => {
       avgRating,
       totalReviews,
       breakdown,
+      trend,
     });
 
   } catch (error) {

@@ -5,10 +5,24 @@ import {
   createRoutesFromElements,
   Route,
   RouterProvider,
+  Outlet,
 } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
 import { AppProvider } from "./context/CombinedContext.jsx";
+import { HotelProvider } from "./context/HotelContext.jsx"; // Import directly
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 import Layout from "./components/Layout";
 
@@ -41,6 +55,7 @@ import OwnerPayments from "./pages/owner/OwnerPaymnets";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Pricing from "./pages/owner/Pricing";
+import OwnerCoupons from "./pages/owner/OwnerCoupons";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -48,8 +63,20 @@ const router = createBrowserRouter(
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="search" element={<Search />} />
-        <Route path="hotels/:hotelId" element={<HotelDetails />} />
-        <Route path="bookings/:hotelId/:roomId" element={<BookRoom />} />
+
+        {/* Hotel Detail Routes - Wrapped in HotelProvider */}
+        <Route
+          element={
+            <HotelProvider>
+              <Outlet />
+            </HotelProvider>
+          }
+        >
+          <Route path="hotels/:hotelId" element={<HotelDetails />} />
+          <Route path="hotels/chat/:hotelId" element={<HotelChat />} />
+          <Route path="bookings/:hotelId/:roomId" element={<BookRoom />} />
+        </Route>
+
         <Route path="auth" element={<AuthPage />} />
         <Route path="reset-password" element={<AuthPage />} />
         <Route path="bookings/my/:bookingId" element={<BookingDetails />} />
@@ -61,7 +88,6 @@ const router = createBrowserRouter(
         <Route path="payment-success" element={<PaymentSuccess />} />
         <Route path="payment-failed" element={<PaymentFailed />} />
         <Route path="wishlist" element={<WishlistPage />} />
-        <Route path="hotels/chat/:hotelId" element={<HotelChat />} />
         <Route path="user/waitlists" element={<UserWaitlist />} />
         <Route path="list-property" element={<ListProperty />} />
 
@@ -78,6 +104,7 @@ const router = createBrowserRouter(
         />
         <Route path="owner/payments" element={<OwnerPayments />} />
         <Route path="owner/pricing/:hotelId" element={<Pricing />} />
+        <Route path="owner/coupons" element={<OwnerCoupons />} />
       </Route>
 
       {/* Admin Routes */}
@@ -89,7 +116,10 @@ const router = createBrowserRouter(
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   </StrictMode>,
 );
 

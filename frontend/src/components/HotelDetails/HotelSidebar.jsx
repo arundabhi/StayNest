@@ -58,8 +58,8 @@ const HotelSidebar = ({ handleCheckAvailability }) => {
                 type="date"
                 className="w-full bg-transparent text-sm font-medium text-gray-700 outline-none cursor-pointer"
                 value={stayDates.checkIn}
-                onChange={(e) => handleDateChange("checkIn", e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => handleDateChange("checkIn", e.target.value)}
               />
             </div>
           </div>

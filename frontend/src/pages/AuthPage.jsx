@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/axios.config";
 import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -53,23 +54,24 @@ const AuthPage = () => {
       setLoading(true);
       setError("");
 
-      const res = await api.post(
-        "/auth/login",
-        {
-          email: form.email,
-          password: form.password,
-        }
-      );
-      await login(res.data.accessToken);
+      const res = await api.post("/auth/login", {
+        email: form.email,
+        password: form.password,
+      });
+
+      if (res.data.accessToken) {
+        localStorage.setItem("accessToken", res.data.accessToken);
+      }
+
+      await login();
 
       navigate(redirect);
     } catch (err) {
-      setError(err.response?.data?.message);
+      setError(err.response?.data?.message ||  "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleRegister = async () => {
     if (!form.name || !form.email || !form.password || !form.mobileNumber) {
@@ -80,20 +82,18 @@ const AuthPage = () => {
       setLoading(true);
       setError("");
 
-      const res = await api.post(
-        "/auth/register",
-        {
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          mobileNumber: form.mobileNumber,
-        }
-      );
-
+      const res = await api.post("/auth/register", {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        mobileNumber: form.mobileNumber,
+      });
 
       if (res.data.accessToken) {
-        await login(res.data.accessToken);
+        localStorage.setItem("accessToken", res.data.accessToken);
       }
+
+      await login();
 
       navigate(redirect);
     } catch (err) {
@@ -116,7 +116,6 @@ const AuthPage = () => {
         email: form.email,
       });
 
-
       switchMode("reset");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP");
@@ -124,7 +123,6 @@ const AuthPage = () => {
       setLoading(false);
     }
   };
-
 
   const handleResetPassword = async () => {
     if (!form.email || !form.otp || !form.password) {
@@ -141,7 +139,8 @@ const AuthPage = () => {
         newPassword: form.password,
       });
 
-
+      setError("");
+      toast.success("Password reset successful. Please login.");
       switchMode("login");
     } catch (err) {
       setError(err.response?.data?.message || "Password reset failed");
@@ -149,7 +148,6 @@ const AuthPage = () => {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -166,7 +164,6 @@ const AuthPage = () => {
             {error}
           </div>
         )}
-
 
         {mode === "register" && (
           <>
@@ -187,7 +184,6 @@ const AuthPage = () => {
           </>
         )}
 
-
         <input
           type="email"
           name="email"
@@ -195,7 +191,6 @@ const AuthPage = () => {
           onChange={handleChange}
           className="input"
         />
-
 
         {(mode === "login" || mode === "register" || mode === "reset") && (
           <input
@@ -207,7 +202,6 @@ const AuthPage = () => {
           />
         )}
 
-
         {mode === "reset" && (
           <input
             type="text"
@@ -217,7 +211,6 @@ const AuthPage = () => {
             className="input"
           />
         )}
-
 
         <button
           type="button"
@@ -235,7 +228,6 @@ const AuthPage = () => {
         >
           {loading ? "Please wait..." : "Continue"}
         </button>
-
 
         <div className="text-center text-sm mt-6 space-y-2">
           {mode === "login" && (

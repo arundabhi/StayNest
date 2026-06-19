@@ -5,9 +5,18 @@ import api from "../api/axios.config";
 import { Send, ChevronLeft, Info } from "lucide-react";
 import toast from "react-hot-toast";
 
+import { useHotel } from "../context/HotelContext";
+
 const HotelChat = () => {
-  const { hotelId } = useParams();
+  const { hotelId: routeHotelId } = useParams();
+  const { hotelId, setHotelId } = useHotel();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (routeHotelId && routeHotelId !== hotelId) {
+      setHotelId(routeHotelId);
+    }
+  }, [routeHotelId, hotelId, setHotelId]);
 
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");

@@ -4,19 +4,24 @@ import { Sparkles, Info } from "lucide-react";
 import toast from "react-hot-toast";
 import HotelCard from "../HotelCard";
 
+import { useAuth } from "../../context/AuthContext";
+
 const PersonalizedRecommendations = () => {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const token = localStorage.getItem("accessToken");
+  const { isLoggedIn, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    if (authLoading) return;
+
     const fetchRecommendations = async () => {
       try {
-        if (!token) {
+        if (!isLoggedIn) {
           setError("Login required to see your personalized picks.");
           return;
         }
+        setError("");
 
         const res = await api.get("/recommendations/personalized");
 
@@ -32,7 +37,7 @@ const PersonalizedRecommendations = () => {
       }
     };
     fetchRecommendations();
-  }, [token]);
+  }, [isLoggedIn, authLoading]);
 
   /* --- Skeleton Component --- */
   const Skeleton = () => (

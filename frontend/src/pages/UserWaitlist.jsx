@@ -9,16 +9,18 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const UserWaitlist = () => {
   const [waitlists, setWaitlists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { isLoggedIn, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
   const fetchWaitlists = async () => {
     try {
-      const res = await api.get(
-        `${import.meta.env.VITE_API_URL}/waitlists/user`,
-      );
+      const res = await api.get("/waitlists/user");
       setWaitlists(res.data.waitlists);
     } catch (err) {
       toast.error("Failed to load your waitlist");
@@ -28,14 +30,21 @@ const UserWaitlist = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!isLoggedIn) {
+      navigate("/auth?redirect=/user/waitlists");
+      return;
+    }
+
     fetchWaitlists();
-  }, []);
+  }, [isLoggedIn, authLoading, navigate]);
 
   const handleRemove = async (id) => {
     if (!window.confirm("Are you sure you want to leave this waitlist?"))
       return;
     try {
-      await api.delete(`${import.meta.env.VITE_API_URL}/waitlists/${id}`);
+      await api.delete(`/waitlists/${id}`);
       toast.success("Removed from waitlist");
       setWaitlists((prev) => prev.filter((item) => item._id !== id));
     } catch (err) {
@@ -43,7 +52,7 @@ const UserWaitlist = () => {
     }
   };
 
-  if (loading)
+  if (authLoading || loading)
     return <div className="p-20 text-center">Loading your waitlists...</div>;
 
   return (

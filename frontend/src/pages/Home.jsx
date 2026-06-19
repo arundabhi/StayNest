@@ -24,7 +24,7 @@ const Home = () => {
         endpoint="/recommendations/offers"
         transform={(h) => ({
           ...h,
-          extra: `Save ${h.offer.discountPercent}% • ₹${h.offer.offerPrice}`,
+          extra: `Save ${h.offer.discountPercent}% • ₹${Math.round(h.basePrice * (1 - h.offer.discountPercent / 100))}`,
           badge: "Offer",
         })}
       />

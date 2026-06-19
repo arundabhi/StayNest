@@ -9,6 +9,7 @@
     "@langchain/mongodb": "^1.1.0",
     "@langchain/openai": "^1.4.5",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.78.1",
     "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

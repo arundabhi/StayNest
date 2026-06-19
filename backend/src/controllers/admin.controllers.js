@@ -28,7 +28,12 @@ export const adminLogin = async (req, res) => {
       { expiresIn: process.env.ACCESS_TOKEN_EXPIRES}
     );
 
-    return res.status(200).json({
+    return res.cookie("accessToken", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 15 * 60 * 60 * 1000, // 24 hours
+    }).status(200).json({
       success: true,
       message: "Admin logged in",
       token,

@@ -1,56 +1,23 @@
-import React, { useState, useEffect } from "react";
-import api from "../api/axios.config"; // Your axios instance with interceptors
+import React, { useState } from "react";
 import { Heart } from "lucide-react";
-import toast from "react-hot-toast";
+import { useWishlistContext } from "../context/WishlistContext";
+import { useHotel } from "../context/HotelContext";
 
 const RoomWishlistToggle = ({ roomId, hotelId }) => {
-  const [isWished, setIsWished] = useState(false);
+  const { toggleWishlist, isInWishlist } = useWishlistContext();
+  const { hotelId: contextHotelId } = useHotel();
   const [loading, setLoading] = useState(false);
-  const token = localStorage.getItem("accessToken");
 
-  // 1. Initial Status Check
-  useEffect(() => {
-    if (!token || !roomId) return;
+  const finalHotelId = hotelId || contextHotelId;
+  const isWished = isInWishlist(finalHotelId, roomId);
 
-    const checkStatus = async () => {
-      try {
-        const res = await api.get(`/wishlists/is-wishlisted/${hotelId}`, {
-          params: { roomId }, // Passes roomId as a query parameter
-        });
-        setIsWished(res.data.wishlisted);
-      } catch (err) {
-        console.error("Wishlist sync error:", err);
-      }
-    };
-    checkStatus();
-  }, [roomId, hotelId, token]);
-
-  // 2. Toggle Action
+  // Toggle Action
   const handleToggle = async (e) => {
     e.stopPropagation(); // Prevents clicking the heart from navigating to another page
 
-    if (!token) {
-      return toast.error("Please login to save this suite", {
-        icon: "🔒",
-        style: { borderRadius: "15px", background: "#333", color: "#fff" },
-      });
-    }
-
     try {
       setLoading(true);
-      const res = await api.post(`/wishlists/toggle`, {
-        hotelId,
-        roomId,
-      });
-
-      setIsWished(res.data.wished);
-
-      toast.success(res.data.message, {
-        icon: res.data.wished ? "❤️" : "💔",
-        duration: 2000,
-      });
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Connection failed");
+      await toggleWishlist(finalHotelId, roomId);
     } finally {
       setLoading(false);
     }
@@ -79,3 +46,4 @@ const RoomWishlistToggle = ({ roomId, hotelId }) => {
 };
 
 export default RoomWishlistToggle;
+

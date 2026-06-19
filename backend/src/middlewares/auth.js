@@ -3,17 +3,21 @@ import jwt from 'jsonwebtoken'
 
 export const protect = async (req, res, next) => {
   try {
+    let token = null;
     const authHeader = req.headers.authorization;
 
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (req.cookies && req.cookies.accessToken) {
+      token = req.cookies.accessToken;
+    }
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!token || token === "undefined" || token === "null") {
       return res.status(401).json({
         success: false,
         message: "Token missing or invalid",
       });
     }
-
-    const token = authHeader.split(" ")[1];
 
   
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);

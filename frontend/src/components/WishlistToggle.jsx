@@ -1,9 +1,9 @@
 import React from "react";
-import { useWishlist } from "../context/WishlistContext";
+import { useWishlistContext } from "../context/WishlistContext";
 import { Heart } from "lucide-react";
 
 const WishlistToggle = ({ hotelId }) => {
-  const { toggleWishlist, isInWishlist } = useWishlist();
+  const { toggleWishlist, isInWishlist } = useWishlistContext();
   const isWished = isInWishlist(hotelId);
 
   const handleToggle = async (e) => {

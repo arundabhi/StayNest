@@ -1,52 +1,25 @@
-import React, { useEffect, useState } from "react";
-import api from "../api/axios.config";
+import React, { useEffect } from "react";
 import { Heart, Trash2, MapPin, ArrowRight, ShoppingBag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { useWishlistContext } from "../context/WishlistContext";
+import { useAuth } from "../context/AuthContext";
 
 const WishlistPage = () => {
-  const [wishlist, setWishlist] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { wishlist, loading, removeWishlist } = useWishlistContext();
+  const { isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const token = localStorage.getItem("accessToken");
-
-  const fetchWishlist = async () => {
-    try {
-      const res = await api.get("/wishlists");
-      if (res.data.success) {
-        setWishlist(res.data.wishlist);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load wishlist");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    if (!token) {
+    if (!authLoading && !isLoggedIn) {
       navigate("/auth");
-      return;
     }
-    fetchWishlist();
-  }, [token]);
+  }, [isLoggedIn, authLoading, navigate]);
 
   const handleRemove = async (wishlistId) => {
-    try {
-      const res = await api.delete(
-        `/wishlists/${wishlistId}`
-      );
-      if (res.data.success) {
-        setWishlist((prev) => prev.filter((item) => item._id !== wishlistId));
-        toast.success("Removed from wishlist");
-      }
-    } catch (error) {
-      toast.error("Action failed");
-    }
+    await removeWishlist(wishlistId);
   };
 
-  if (loading)
+  if (authLoading || loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-600"></div>

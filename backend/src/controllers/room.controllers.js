@@ -8,7 +8,7 @@ import mongoose from 'mongoose'
 export const createRoom = async (req, res) => {
   try {
 
-    const userId = req.userId;        
+    const userId = req.userId;
     const hotelId = req.params.hotelId;
 
     const hotel = await Hotel.findOne({
@@ -29,10 +29,11 @@ export const createRoom = async (req, res) => {
       totalRooms,
       maxGuests,
       roomType,
+      description
     } = req.body;
 
 
-    if (!title || !pricePerDay || !totalRooms || !maxGuests || !roomType) {
+    if (!title || !pricePerDay || !totalRooms || !maxGuests || !roomType || !description) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
@@ -77,6 +78,7 @@ export const createRoom = async (req, res) => {
       amenities,
       images,
       totalRooms,
+      description,
       pricePerDay,
     });
 
@@ -106,7 +108,8 @@ export const updateRoom = async (req, res) => {
       totalRooms,
       maxGuests,
       roomType,
-      amenities
+      amenities,
+      description
     } = req.body;
 
 
@@ -116,7 +119,8 @@ export const updateRoom = async (req, res) => {
       !totalRooms &&
       !maxGuests &&
       !roomType &&
-      !amenities
+      !amenities &&
+      !description
     ) {
       return res.status(400).json({
         success: false,
@@ -166,6 +170,7 @@ export const updateRoom = async (req, res) => {
     if (maxGuests) updates.maxGuests = maxGuests;
     if (roomType) updates.roomType = roomType;
     if (normalizedAmenities) updates.amenities = normalizedAmenities;
+    if (description) updates.description = description;
 
 
     const updatedRoom = await Room.findByIdAndUpdate(
@@ -187,7 +192,7 @@ export const updateRoom = async (req, res) => {
       message: "Internal server error",
     });
   }
-}; 
+};
 
 export const updateRoomImages = async (req, res) => {
   try {
@@ -291,7 +296,7 @@ export const deleteRoom = async (req, res) => {
         message: "Cannot delete room with active bookings",
       });
     }
-  
+
     await room.deleteOne();
 
     return res.status(200).json({
@@ -314,9 +319,9 @@ export const getRoomsByHotel = async (req, res) => {
 
     const { page = 1, limit = 10 } = req.query;
 
-const rooms = await Room.find({ hotelId })
-  .skip((page - 1) * limit)
-  .limit(Number(limit));
+    const rooms = await Room.find({ hotelId })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
 
 
     if (rooms.length === 0) {
@@ -508,7 +513,7 @@ export const searchRooms = async (req, res) => {
       isAvailable: true,
     };
 
- 
+
     if (maxGuests) {
       query.maxGuests = { $gte: Number(maxGuests) };
     }
@@ -542,7 +547,7 @@ export const getRoomStats = async (req, res) => {
     const userId = req.userId;
     const { hotelId, roomId } = req.params;
 
- 
+
     const hotel = await Hotel.findOne({
       _id: hotelId,
       owner: userId,

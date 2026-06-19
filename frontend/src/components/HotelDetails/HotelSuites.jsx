@@ -1,7 +1,8 @@
-import React from "react";
-import { ArrowRight } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowRight, Calendar } from "lucide-react";
 import RoomWishlistToggle from "../RoomWishlistToggle";
 import { useHotel } from "../../context/HotelContext";
+import RoomAvailabilityModal from "./RoomAvailabilityModal";
 
 const HotelSuites = ({ handleBookingRedirect }) => {
   const {
@@ -9,7 +10,16 @@ const HotelSuites = ({ handleBookingRedirect }) => {
     festivalPricing,
     selectedRoomType,
     setSelectedRoomType,
+    handleDateChange,
   } = useHotel();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
+
+  const handleOpenCalendar = (room) => {
+    setSelectedRoom(room);
+    setIsModalOpen(true);
+  };
 
   return (
     <section id="suites" className="scroll-mt-28 pt-6 border-t border-gray-100">
@@ -92,20 +102,39 @@ const HotelSuites = ({ handleBookingRedirect }) => {
                     )}
                     <p className="text-xs text-gray-400">per night</p>
                   </div>
-                  <button
-                    onClick={() => handleBookingRedirect(room._id)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition active:scale-95"
-                  >
-                    Book Now <ArrowRight size={15} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenCalendar(room)}
+                      className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 transition active:scale-95"
+                    >
+                      <Calendar size={15} className="text-indigo-500" /> Availability
+                    </button>
+                    <button
+                      onClick={() => handleBookingRedirect(room._id)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition active:scale-95"
+                    >
+                      Book Now <ArrowRight size={15} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {isModalOpen && selectedRoom && (
+        <RoomAvailabilityModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          roomId={selectedRoom._id}
+          roomTitle={selectedRoom.title}
+          pricePerDay={festivalPricing ? Math.round(selectedRoom.pricePerDay * festivalPricing.multiplier) : selectedRoom.pricePerDay}
+          handleBookingRedirect={handleBookingRedirect}
+          handleDateChange={handleDateChange}
+        />
+      )}
     </section>
   );
 };
-
 export default HotelSuites;

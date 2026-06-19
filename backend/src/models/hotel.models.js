@@ -79,7 +79,10 @@ const hotelSchema = new Schema(
       type: Boolean,
       default: false, 
     },
-
+    isOfferActive: {
+      type: Boolean,
+      default: false,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -87,10 +90,30 @@ const hotelSchema = new Schema(
     approvedBy:{type:String},
     approvedAt:{type:Date}
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 );
 
 
 hotelSchema.index({ location: "2dsphere" });
 
+hotelSchema.virtual("festivalPricing", {
+  ref: "Pricing",
+  localField: "_id",
+  foreignField: "hotelId",
+  justOne: true,
+  match: () => ({
+    startDate: { $lte: new Date() },
+    endDate: { $gte: new Date() }
+  })
+});
+
+hotelSchema.pre(/^find/, function() {
+  this.populate("festivalPricing");
+});
+
 export const Hotel = mongoose.model("Hotel", hotelSchema);
+

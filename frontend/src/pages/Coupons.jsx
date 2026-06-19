@@ -14,10 +14,7 @@ const Coupons = () => {
   useEffect(() => {
     const fetchCoupons = async () => {
       try {
-        const res = await api.get(
-          `${import.meta.env.VITE_API_URL}/coupons/available?amount=0`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        const res = await api.get(`/coupons/available?amount=0`,);
 
         if (res.data.success) {
           setCoupons(res.data.coupons);

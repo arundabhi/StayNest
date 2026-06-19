@@ -13,6 +13,8 @@ import {
   Legend,
   BarChart,
   Bar,
+  LineChart,
+  Line,
 } from "recharts";
 import {
   TrendingUp,
@@ -30,6 +32,7 @@ import {
   Clock,
   ChevronRight,
   Quote,
+  X,
 } from "lucide-react";
 import api from "../../api/axios.config";
 import toast from "react-hot-toast";
@@ -51,6 +54,60 @@ const OwnerDashboard = () => {
     guestAnalytics: null,
   });
   const navigate = useNavigate();
+
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [reviewsData, setReviewsData] = useState([]);
+  const [reviewsPagination, setReviewsPagination] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [modalRatingBreakdown, setModalRatingBreakdown] = useState(null);
+  const [chartTimeframe, setChartTimeframe] = useState("monthly");
+  const [activePaymentView, setActivePaymentView] = useState("methods");
+
+  const fetchReviews = async (pageNo = 1) => {
+    try {
+      setReviewsLoading(true);
+      const hotelId = data.overview?.hotel?._id;
+      if (!hotelId) return;
+
+      const res = await api.get(`/reviews/hotel/${hotelId}?page=${pageNo}`);
+      if (res.data.success) {
+        setReviewsData(res.data.reviews || []);
+        setReviewsPagination(res.data.pagination || null);
+      }
+    } catch (err) {
+      toast.error("Failed to load reviews");
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const fetchRatingBreakdown = async () => {
+    try {
+      const hotelId = data.overview?.hotel?._id;
+      if (!hotelId) return;
+
+      const res = await api.get(`/reviews/hotel/${hotelId}/rating`);
+      if (res.data.success) {
+        setModalRatingBreakdown(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to load rating breakdown", err);
+    }
+  };
+
+  useEffect(() => {
+    if (showReviewsModal) {
+      fetchReviews(reviewsPage);
+    }
+  }, [showReviewsModal, reviewsPage]);
+
+  useEffect(() => {
+    if (showReviewsModal) {
+      fetchRatingBreakdown();
+    }
+  }, [showReviewsModal]);
+
   useEffect(() => {
     fetchAllAnalytics();
   }, []);
@@ -195,11 +252,30 @@ const OwnerDashboard = () => {
     overview,
     revenueChart,
     bookingDistribution,
+    dailyBookings,
     roomPerformance,
     reviewAnalytics,
     paymentAnalytics,
     guestAnalytics,
   } = data;
+
+  const activeRatingInfo = modalRatingBreakdown || reviewAnalytics;
+  const activeChartData = chartTimeframe === "monthly" ? revenueChart : dailyBookings;
+  const activePaymentData = activePaymentView === "methods"
+    ? paymentAnalytics?.paymentMethods
+    : paymentAnalytics?.paymentStatus;
+
+  const formattedReviewTrend = activeRatingInfo?.trend?.map((item) => {
+    const monthNames = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+    return {
+      month: item._id?.month && item._id?.year ? `${monthNames[item._id.month - 1]} ${item._id.year}` : "N/A",
+      rating: item.avgRating ? parseFloat(item.avgRating.toFixed(1)) : 0,
+      count: item.count || 0,
+    };
+  }) || [];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-24 pb-12 px-4 sm:px-8">
@@ -383,16 +459,44 @@ const OwnerDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Revenue Area Chart */}
           <div className="lg:col-span-2 bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-            <h3 className="text-lg font-black text-slate-900 mb-8 tracking-tight">
-              Financial Growth (12 Months)
-            </h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                {chartTimeframe === "monthly" ? "Financial Growth (12 Months)" : "Daily Booking Trend (30 Days)"}
+              </h3>
+              <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                <button
+                  onClick={() => setChartTimeframe("monthly")}
+                  className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all ${
+                    chartTimeframe === "monthly"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setChartTimeframe("daily")}
+                  className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all ${
+                    chartTimeframe === "daily"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Daily (30D)
+                </button>
+              </div>
+            </div>
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueChart}>
+                <AreaChart data={activeChartData}>
                   <defs>
                     <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1} />
                       <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorBook" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
@@ -401,13 +505,34 @@ const OwnerDashboard = () => {
                     stroke="#F1F5F9"
                   />
                   <XAxis
-                    dataKey="month"
+                    dataKey={chartTimeframe === "monthly" ? "month" : "date"}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "#94A3B8", fontSize: 12 }}
+                    tickFormatter={(tick) => {
+                      if (chartTimeframe === "daily") {
+                        try {
+                          return new Date(tick).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                          });
+                        } catch {
+                          return tick;
+                        }
+                      }
+                      return tick;
+                    }}
                     dy={10}
                   />
                   <YAxis
+                    yAxisId="left"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#94A3B8", fontSize: 12 }}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: "#94A3B8", fontSize: 12 }}
@@ -419,13 +544,26 @@ const OwnerDashboard = () => {
                       boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                     }}
                   />
+                  <Legend verticalAlign="top" height={36} />
                   <Area
+                    yAxisId="left"
                     type="monotone"
+                    name="Revenue (₹)"
                     dataKey="revenue"
                     stroke="#3B82F6"
                     strokeWidth={4}
                     fillOpacity={1}
                     fill="url(#colorRev)"
+                  />
+                  <Area
+                    yAxisId="right"
+                    type="monotone"
+                    name="Bookings"
+                    dataKey="bookings"
+                    stroke="#10B981"
+                    strokeWidth={4}
+                    fillOpacity={1}
+                    fill="url(#colorBook)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -532,12 +670,36 @@ const OwnerDashboard = () => {
           </div>
 
           <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-            <h3 className="text-lg font-black text-slate-900 mb-6 tracking-tight">
-              Payment Methods
-            </h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                {activePaymentView === "methods" ? "Payment Methods" : "Payment Status Distribution"}
+              </h3>
+              <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                <button
+                  onClick={() => setActivePaymentView("methods")}
+                  className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all ${
+                    activePaymentView === "methods"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Methods
+                </button>
+                <button
+                  onClick={() => setActivePaymentView("status")}
+                  className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all ${
+                    activePaymentView === "status"
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Status
+                </button>
+              </div>
+            </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={paymentAnalytics?.paymentMethods}>
+                <BarChart data={activePaymentData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -559,11 +721,20 @@ const OwnerDashboard = () => {
                     contentStyle={{ borderRadius: "12px", border: "none" }}
                   />
                   <Bar
-                    dataKey="revenue"
-                    fill="#3B82F6"
+                    dataKey={activePaymentView === "methods" ? "revenue" : "amount"}
                     radius={[6, 6, 0, 0]}
                     barSize={40}
-                  />
+                  >
+                    {activePaymentData?.map((entry, index) => {
+                      let color = "#3B82F6"; // default blue
+                      if (activePaymentView === "status") {
+                        if (entry._id === "success") color = "#10B981"; // emerald
+                        else if (entry._id === "pending" || entry._id === "processing") color = "#F59E0B"; // amber
+                        else if (entry._id === "canceled" || entry._id === "failed") color = "#EF4444"; // rose
+                      }
+                      return <Cell key={`cell-${index}`} fill={color} />;
+                    })}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -655,7 +826,13 @@ const OwnerDashboard = () => {
               <h3 className="text-lg font-bold text-slate-900 tracking-tight">
                 Recent Guest Feedback
               </h3>
-              <button className="text-xs font-bold text-indigo-600 hover:underline">
+              <button
+                onClick={() => {
+                  setReviewsPage(1);
+                  setShowReviewsModal(true);
+                }}
+                className="text-xs font-bold text-indigo-600 hover:underline"
+              >
                 View All Reviews
               </button>
             </div>
@@ -723,9 +900,243 @@ const OwnerDashboard = () => {
               )}
             </div>
           </div>
+      {/* REVIEWS DRAWER MODAL */}
+      {showReviewsModal && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setShowReviewsModal(false)}
+          ></div>
+
+          <div className="absolute inset-y-0 right-0 pl-10 max-w-full flex">
+            <div className="w-screen max-w-lg bg-white shadow-2xl flex flex-col transition-all duration-300 transform translate-x-0">
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                    Guest Feedback Ledger
+                  </h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">
+                    Property: {overview?.hotel?.name}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowReviewsModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Rating Summary Card */}
+                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex gap-6 items-center">
+                  <div className="text-center">
+                    <p className="text-5xl font-black text-slate-900 tracking-tighter">
+                      {activeRatingInfo?.avgRating || "0.0"}
+                    </p>
+                    <div className="flex justify-center gap-0.5 mt-1.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={14}
+                          className={
+                            i < Math.round(activeRatingInfo?.avgRating || 0)
+                              ? "text-amber-400 fill-amber-400"
+                              : "text-slate-300"
+                          }
+                        />
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">
+                      {activeRatingInfo?.totalReviews || 0} reviews
+                    </p>
+                  </div>
+
+                  {/* Progress Bars */}
+                  <div className="flex-1 space-y-1.5">
+                    {[5, 4, 3, 2, 1].map((rating) => {
+                      const ratingInfo = activeRatingInfo?.breakdown?.[rating] || { percentage: 0 };
+                      const pct = parseFloat(ratingInfo.percentage) || 0;
+                      return (
+                        <div key={rating} className="flex items-center gap-3 text-xs">
+                          <span className="font-bold text-slate-600 min-w-[20px] text-right">
+                            {rating}★
+                          </span>
+                          <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-400 rounded-full"
+                              style={{ width: `${pct}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-bold text-slate-400 min-w-[30px]">
+                            {pct}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Rating Trend Chart */}
+                {formattedReviewTrend.length > 0 && (
+                  <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
+                      Rating Trend (Last 6 Months)
+                    </h4>
+                    <div className="h-[150px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={formattedReviewTrend}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                          <XAxis
+                            dataKey="month"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#94A3B8", fontSize: 10 }}
+                          />
+                          <YAxis
+                            domain={[1, 5]}
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#94A3B8", fontSize: 10 }}
+                            ticks={[1, 2, 3, 4, 5]}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              borderRadius: "12px",
+                              border: "none",
+                              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                              fontSize: "11px",
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="rating"
+                            name="Average Rating"
+                            stroke="#F59E0B"
+                            strokeWidth={3}
+                            dot={{ fill: "#F59E0B", strokeWidth: 2 }}
+                            activeDot={{ r: 6 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reviews List */}
+                <div className="space-y-4">
+                  {reviewsLoading ? (
+                    <div className="py-20 flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                        Loading reviews...
+                      </p>
+                    </div>
+                  ) : reviewsData.length > 0 ? (
+                    reviewsData.map((r) => (
+                      <div
+                        key={r._id}
+                        className="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+                      >
+                        <div className="absolute top-0 right-0 p-3 opacity-10">
+                          <Quote size={30} className="text-slate-900" />
+                        </div>
+
+                        <div className="flex justify-between items-start gap-4 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs uppercase">
+                              {r.userId?.name?.charAt(0) || "?"}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-slate-900 text-sm">
+                                {r.userId?.name || "Guest"}
+                              </h4>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                {r.roomId?.roomType || "Standard Room"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="flex gap-0.5 justify-end">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={12}
+                                  className={
+                                    i < r.rating
+                                      ? "text-amber-400 fill-amber-400"
+                                      : "text-slate-200"
+                                  }
+                                />
+                              ))}
+                            </div>
+                            <p className="text-[9px] text-slate-400 font-bold mt-1">
+                              {new Date(r.createdAt).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+
+                        <p className="text-slate-600 text-xs leading-relaxed italic bg-slate-50 p-3 rounded-xl border border-slate-50">
+                          "{r.message || 'No written review comment provided.'}"
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-20 text-center text-slate-400">
+                      <MessageSquare size={32} className="mx-auto text-slate-300 mb-2" />
+                      <p className="font-bold">No feedback available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer Pagination */}
+              {reviewsPagination && reviewsPagination.totalPages > 1 && (
+                <div className="p-4 border-t border-slate-100 flex justify-between items-center bg-slate-50">
+                  <button
+                    disabled={!reviewsPagination.hasPrevPage}
+                    onClick={() => setReviewsPage((prev) => prev - 1)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm border ${
+                      reviewsPagination.hasPrevPage
+                        ? "bg-white text-slate-700 hover:bg-slate-100 border-slate-200"
+                        : "bg-slate-100 text-slate-400 border-slate-100 cursor-not-allowed"
+                    }`}
+                  >
+                    ← Prev
+                  </button>
+
+                  <span className="text-xs font-bold text-slate-500">
+                    Page {reviewsPagination.currentPage} of {reviewsPagination.totalPages}
+                  </span>
+
+                  <button
+                    disabled={!reviewsPagination.hasNextPage}
+                    onClick={() => setReviewsPage((prev) => prev + 1)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm border ${
+                      reviewsPagination.hasNextPage
+                        ? "bg-indigo-600 text-white hover:bg-indigo-700 border-indigo-600"
+                        : "bg-slate-100 text-slate-400 border-slate-100 cursor-not-allowed"
+                    }`}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+      )}
       </div>
     </div>
+  </div>
   );
 };
 

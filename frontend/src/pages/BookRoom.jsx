@@ -202,7 +202,7 @@ const RoomBook = () => {
       setCoupon((prev) => ({ ...prev, loading: true }));
       const res = await api.post(
         "/coupons/validate",
-        { code: coupon.code, bookingAmount: pricing.subtotal }
+        { code: coupon.code, bookingAmount: pricing.subtotal, hotelId }
       );
       setCoupon((prev) => ({ ...prev, applied: res.data, loading: false }));
 

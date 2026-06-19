@@ -10,50 +10,55 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUserData = async () => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+  try {
+    const res = await api.get("/users/me");
 
-    try {
-      const res = await api.get("/users/me");
-      const userData = res.data.user;
-      setUser(userData);
-      setIsLoggedIn(true);
+    const userData = res.data.user;
 
-      if (userData.role === "owner") {
-        const hotelRes = await api.get("/hotels/my/hotel");
-        if (hotelRes.data && hotelRes.data.hotels && hotelRes.data.hotels.length > 0) {
-          setMyHotelId(hotelRes.data.hotels[0]._id);
-        }
+    setUser(userData);
+    setIsLoggedIn(true);
+
+    if (userData.role === "owner") {
+      const hotelRes = await api.get("/hotels/my/hotel");
+
+      if (
+        hotelRes.data &&
+        hotelRes.data.hotels &&
+        hotelRes.data.hotels.length > 0
+      ) {
+        setMyHotelId(hotelRes.data.hotels[0]._id);
       }
-    } catch (err) {
-      console.error("Auth initialization failed:", err);
-      localStorage.removeItem("accessToken");
-      setUser(null);
-      setIsLoggedIn(false);
-      setMyHotelId(null);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    console.error("Error fetching user data:", err);
+    setUser(null);
+    setIsLoggedIn(false);
+    setMyHotelId(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchUserData();
   }, []);
 
-  const login = async (accessToken) => {
-    localStorage.setItem("accessToken", accessToken);
-    await fetchUserData();
-  };
+  const login = async () => {
+  await fetchUserData();
+};
 
-  const logout = () => {
-    localStorage.removeItem("accessToken");
-    setUser(null);
-    setIsLoggedIn(false);
-    setMyHotelId(null);
-  };
+  const logout = async () => {
+  try {
+    await api.post("/auth/logout");
+  } catch (err) {
+    console.error(err);
+  }
+
+  localStorage.removeItem("accessToken");
+  setUser(null);
+  setIsLoggedIn(false);
+  setMyHotelId(null);
+};
 
   return (
     <AuthContext.Provider

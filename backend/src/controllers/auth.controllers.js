@@ -1,29 +1,44 @@
-import { User } from '../models/user.models.js';
-import bcrypt from 'bcrypt'
-import validator from 'validator'
-import generateAccessAndRefreshToken from '../utils/token.utils.js'
+import { User } from "../models/user.models.js";
+import bcrypt from "bcrypt";
+import validator from "validator";
+import generateAccessAndRefreshToken from "../utils/token.utils.js";
 import crypto from "crypto";
-import uploadCloudinary from '../utils/cloudinary.utils.js';
-import jwt from 'jsonwebtoken'
-import { sendEmail,emailTemplates } from '../utils/sendEmail.utils.js';
+import uploadCloudinary from "../utils/cloudinary.utils.js";
+import jwt from "jsonwebtoken";
+import { sendEmail, emailTemplates } from "../utils/sendEmail.utils.js";
 import {
   validateEmail,
   validatePassword,
   sanitizeInput,
-  validatePhoneNumber
+  validatePhoneNumber,
 } from "../utils/validate.utils.js";
+
+const refreshCookiesOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+const accessCookiesOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+  maxAge: 15 * 60 * 1000,
+};
 
 export const registerUser = async (req, res) => {
   try {
     let { name, email, password, mobileNumber } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: "Missing fields" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing fields" });
     }
     name = sanitizeInput(name);
     email = validateEmail(email);
     password = validatePassword(password);
-    mobileNumber = validatePhoneNumber(mobileNumber)
+    mobileNumber = validatePhoneNumber(mobileNumber);
 
     if (!name || name.length < 2) {
       return res.status(400).json({
@@ -31,13 +46,15 @@ export const registerUser = async (req, res) => {
         message: "Name must be at least 2 characters",
       });
     }
-    
+
     const existingUser = await User.findOne({
       $or: [{ email }, { mobileNumber }],
     });
 
     if (existingUser) {
-      return res.status(409).json({ success: false, message: "User already exists" });
+      return res
+        .status(409)
+        .json({ success: false, message: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -63,29 +80,30 @@ export const registerUser = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
-    return res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        profileImage:user.profileImage
-      },
-      accessToken,
-      refreshToken,
-    });
+    return res
+      .cookie("refreshToken", refreshToken, refreshCookiesOptions)
+      .cookie("accessToken", accessToken, accessCookiesOptions)
+      .status(201)
+      .json({
+        success: true,
+        message: "User registered successfully",
+        accessToken,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          profileImage: user.profileImage,
+        },
+      });
   } catch (error) {
     console.error("REGISTER ERROR DETAILS:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-
 export const loginUser = async (req, res) => {
   try {
     let { email, password } = req.body;
-
 
     if (!email || !password) {
       return res.status(400).json({
@@ -112,21 +130,19 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user);
+    const { accessToken, refreshToken } =
+      await generateAccessAndRefreshToken(user);
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
     return res
       .status(200)
-      .cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      })
+      .cookie("accessToken", accessToken, accessCookiesOptions)
+      .cookie("refreshToken", refreshToken, refreshCookiesOptions)
       .json({
         success: true,
+        message: "Login successful",
         accessToken,
         user: {
           id: user._id,
@@ -134,27 +150,29 @@ export const loginUser = async (req, res) => {
           email: user.email,
         },
       });
-
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message:error.message,
+      message: error.message,
     });
   }
 };
 
-
-
-
 export const logoutUser = async (req, res) => {
-  await User.findByIdAndUpdate(req.userId, {
-    $unset: { refreshToken: 1 },
-  });
+  if (req.userId) {
+    await User.findByIdAndUpdate(req.userId, {
+      $unset: { refreshToken: 1 },
+    });
+  }
 
-  return res.status(200).json({
-    success: true,
-    message: "Logged out successfully",
-  });
+  return res
+    .clearCookie("refreshToken", refreshCookiesOptions)
+    .clearCookie("accessToken", accessCookiesOptions)
+    .status(200)
+    .json({
+      success: true,
+      message: "Logged out successfully",
+    });
 };
 
 export const refreshAccessToken = async (req, res) => {
@@ -168,10 +186,7 @@ export const refreshAccessToken = async (req, res) => {
       });
     }
 
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.REFRESH_TOKEN_SECRET
-    );
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
     const user = await User.findById(decoded.id);
 
@@ -182,26 +197,21 @@ export const refreshAccessToken = async (req, res) => {
       });
     }
 
-
     const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessAndRefreshToken(user);
 
     user.refreshToken = newRefreshToken;
     await user.save({ validateBeforeSave: false });
 
-    res
-      .cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      })
+    return res
+      .cookie("refreshToken", newRefreshToken, refreshCookiesOptions)
+      .cookie("accessToken", accessToken, accessCookiesOptions)
       .status(200)
       .json({
         success: true,
+        message: "Access token refreshed successfully",
         accessToken,
       });
-
   } catch (error) {
     return res.status(403).json({
       success: false,
@@ -209,7 +219,6 @@ export const refreshAccessToken = async (req, res) => {
     });
   }
 };
-
 
 export const forgotPassword = async (req, res) => {
   try {
@@ -223,7 +232,6 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -233,7 +241,6 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-   
     if (!user) {
       return res.status(200).json({
         success: true,
@@ -241,21 +248,15 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-   
     const otp = crypto.randomInt(100000, 999999).toString();
 
-   
-    const hashedOtp = crypto
-      .createHash("sha256")
-      .update(otp)
-      .digest("hex");
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
     user.resetPasswordToken = hashedOtp;
-    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; 
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
 
     await user.save({ validateBeforeSave: false });
 
-  
     await sendEmail({
       to: email,
       subject: "Reset Password OTP",
@@ -283,8 +284,7 @@ export const forgotPassword = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-
-    const { email, newPassword,otp } = req.body;
+    const { email, newPassword, otp } = req.body;
 
     if (!otp || !email || !newPassword) {
       return res.status(400).json({
@@ -293,11 +293,7 @@ export const resetPassword = async (req, res) => {
       });
     }
 
- 
-    const hashedOtp = crypto
-      .createHash("sha256")
-      .update(otp)
-      .digest("hex");
+    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
     const user = await User.findOne({
       email,
@@ -312,10 +308,8 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-
     user.password = await bcrypt.hash(newPassword, 10);
 
-    
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     user.refreshToken = undefined;
@@ -336,7 +330,6 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-
 export const ownerLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -356,7 +349,6 @@ export const ownerLogin = async (req, res) => {
       });
     }
 
- 
     if (owner.role !== "owner") {
       return res.status(403).json({
         success: false,
@@ -364,7 +356,6 @@ export const ownerLogin = async (req, res) => {
       });
     }
 
-   
     const isPasswordMatch = await bcrypt.compare(password, owner.password);
 
     if (!isPasswordMatch) {
@@ -374,22 +365,13 @@ export const ownerLogin = async (req, res) => {
       });
     }
 
-
     const { accessToken, refreshToken } =
       await generateAccessAndRefreshToken(owner);
 
- 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    };
-
     return res
       .status(200)
-      .cookie("accessToken", accessToken, cookieOptions)
-      .cookie("refreshToken", refreshToken, cookieOptions)
+      .cookie("accessToken", accessToken, accessCookiesOptions)
+      .cookie("refreshToken", refreshToken, refreshCookiesOptions)
       .json({
         success: true,
         message: "Owner login successful",
@@ -398,10 +380,9 @@ export const ownerLogin = async (req, res) => {
           id: owner._id,
           name: owner.name,
           email: owner.email,
-          role: owner.role
+          role: owner.role,
         },
       });
-
   } catch (error) {
     console.error("OWNER LOGIN ERROR:", error);
     return res.status(500).json({

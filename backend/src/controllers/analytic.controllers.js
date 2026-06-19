@@ -153,6 +153,7 @@ export const getDashboardOverview = async (req, res) => {
       message: "Dashboard overview fetched",
       overview: {
         hotel: {
+          _id: hotel._id,
           name: hotel.name,
           city: hotel.city,
           avgRating: hotel.avgRating,

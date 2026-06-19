@@ -5,6 +5,7 @@ import { Booking } from "../models/booking.models.js";
 import { Review } from "../models/review.models.js";
 import { Wishlist } from "../models/wishlist.models.js";
 import { User } from "../models/user.models.js";
+import { Coupon } from "../models/coupone.models.js";
 import mongoose from "mongoose";
 
 
@@ -600,64 +601,60 @@ export const getSpecialOffers = async (req, res) => {
   try {
     const { limit = 10 } = req.query;
 
-
     const hotels = await Hotel.find({
       isActive: true,
       isApproved: true,
-    }).limit(Number(limit) * 2);
+    })
+      .select("_id name city basePrice images amenities avgRating totalReviews")
+      .limit(Number(limit) * 2)
+      .lean();
 
-    const offersPromises = hotels.map(async (hotel) => {
-      const rooms = await Room.find({ hotelId: hotel._id });
+    const hotelIds = hotels.map((h) => h._id);
+    const today = new Date();
 
-      let totalCapacity = 0;
-      let bookedRooms = 0;
+    const coupons = await Coupon.find({
+      hotelId: { $in: hotelIds },
+      isActive: true,
+      expiryDate: { $gte: today },
+    }).lean();
 
-      for (const room of rooms) {
-        totalCapacity += room.totalRooms;
-
-        const booked = await Booking.countDocuments({
-          roomId: room._id,
-          status: "booked",
-          checkIn: { $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-        });
-
-        bookedRooms += booked;
-      }
-
-      const occupancyRate = totalCapacity > 0 ? bookedRooms / totalCapacity : 0;
-
-
-      let discountPercent = 0;
-      if (occupancyRate < 0.3) discountPercent = 30;
-      else if (occupancyRate < 0.5) discountPercent = 20;
-      else if (occupancyRate < 0.7) discountPercent = 10;
-
-      if (discountPercent > 0) {
-        return {
-          ...hotel.toObject(),
-          offer: {
-            discountPercent,
-            originalPrice: hotel.basePrice,
-            offerPrice: Math.round(
-              hotel.basePrice * (1 - discountPercent / 100)
-            ),
-            validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          },
-        };
-      }
-      return null;
+    const couponMap = {};
+    coupons.forEach((coupon) => {
+      couponMap[coupon.hotelId.toString()] = coupon;
     });
 
-    const offersResults = await Promise.all(offersPromises);
-    const specialOffers = offersResults
-      .filter((offer) => offer !== null)
-      .slice(0, Number(limit));
+    const specialOffers = [];
+
+    for (const hotel of hotels) {
+      const coupon = couponMap[hotel._id.toString()];
+
+      if (coupon && (coupon.usedCount || 0) < coupon.usageLimit) {
+        let discountPercent = 0;
+        if (coupon.discountType === "PERCENTAGE") {
+          discountPercent = coupon.discountValue;
+        } else if (coupon.discountType === "FLAT") {
+          const offerPrice = Math.max(0, hotel.basePrice - coupon.discountValue);
+          discountPercent = hotel.basePrice > 0 ? Math.round(((hotel.basePrice - offerPrice) / hotel.basePrice) * 100) : 0;
+        }
+
+        specialOffers.push({
+          ...hotel,
+          offer: {
+            couponCode: coupon.code,
+            discountPercent,
+            validUntil: coupon.expiryDate,
+          },
+        });
+      }
+    }
+
+    const slicedOffers = specialOffers.slice(0, Number(limit));
 
     return res.status(200).json({
       success: true,
       message: "Special offers fetched",
-      count: specialOffers.length,
-      offers: specialOffers,
+      count: slicedOffers.length,
+      offers: slicedOffers,
     });
   } catch (error) {
     console.error("Special offers error:", error);
@@ -727,46 +724,46 @@ export const getUsersAlsoViewed = async (req, res) => {
 
 
 export const getHotelOffer = async (req, res) => {
-  const { hotelId } = req.params;
+  try {
+    const { hotelId } = req.params;
 
-  const hotel = await Hotel.findById(hotelId);
-  if (!hotel) return res.json({ success: false });
+    const hotel = await Hotel.findById(hotelId)
+      .select("_id basePrice")
+      .lean();
+    if (!hotel) return res.json({ success: false });
 
+    const today = new Date();
+    const coupon = await Coupon.findOne({
+      hotelId: hotel._id,
+      isActive: true,
+      expiryDate: { $gte: today },
+    }).lean();
 
-  const rooms = await Room.find({ hotelId });
+    if (coupon && (coupon.usedCount || 0) < coupon.usageLimit) {
+      let discountPercent = 0;
+      if (coupon.discountType === "PERCENTAGE") {
+        discountPercent = coupon.discountValue;
+      } else if (coupon.discountType === "FLAT") {
+        const offerPrice = Math.max(0, hotel.basePrice - coupon.discountValue);
+        discountPercent = hotel.basePrice > 0 ? Math.round(((hotel.basePrice - offerPrice) / hotel.basePrice) * 100) : 0;
+      }
 
-  let totalCapacity = 0;
-  let bookedRooms = 0;
+      return res.json({
+        success: true,
+        offer: {
+          couponCode: coupon.code,
+          discountPercent,
+          validUntil: coupon.expiryDate,
+        },
+      });
+    }
 
-  for (const room of rooms) {
-    totalCapacity += room.totalRooms;
-    const booked = await Booking.countDocuments({
-      roomId: room._id,
-      status: "booked",
-    });
-    bookedRooms += booked;
-  }
-
-  const occupancyRate = totalCapacity > 0 ? bookedRooms / totalCapacity : 0;
-
-  let discountPercent = 0;
-  if (occupancyRate < 0.3) discountPercent = 30;
-  else if (occupancyRate < 0.5) discountPercent = 20;
-  else if (occupancyRate < 0.7) discountPercent = 10;
-
-  if (!discountPercent) {
     return res.json({ success: true, offer: null });
+  } catch (error) {
+    console.error("Get hotel offer error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
-
-  return res.json({
-    success: true,
-    offer: {
-      discountPercent,
-      originalPrice: hotel.basePrice,
-      offerPrice: Math.round(
-        hotel.basePrice * (1 - discountPercent / 100)
-      ),
-      validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  });
 };

@@ -57,6 +57,7 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
     const bookings = await Booking.find({
       roomId,
       status: { $in: ["pending", "booked"] },
+      holdExpiresAt: { $gt: new Date() },
       $or: [
         { checkIn: { $lte: end }, checkOut: { $gte: start } },
       ],
@@ -369,214 +370,214 @@ export const getMonthViewCalendar = async (req, res) => {
   }
 };
 
-// export const quickAvailabilityCheck = async (req, res) => {
-//   try {
-//     const { roomId } = req.params;
-//     const { checkIn, checkOut } = req.query;
+export const quickAvailabilityCheck = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { checkIn, checkOut } = req.query;
 
-//     if (!roomId || !checkIn || !checkOut) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Room ID, check-in, and check-out dates are required",
-//       });
-//     }
+    if (!roomId || !checkIn || !checkOut) {
+      return res.status(400).json({
+        success: false,
+        message: "Room ID, check-in, and check-out dates are required",
+      });
+    }
 
-//     const room = await Room.findById(roomId);
-//     if (!room) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Room not found",
-//       });
-//     }
+    const room = await Room.findById(roomId);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
 
-//     const startDate = new Date(checkIn);
-//     const endDate = new Date(checkOut);
+    const startDate = new Date(checkIn);
+    const endDate = new Date(checkOut);
 
-//     if (endDate <= startDate) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Check-out must be after check-in",
-//       });
-//     }
-
- 
-//     const bookedCount = await Booking.countDocuments({
-//       roomId,
-//       status: { $in: ["pending", "booked"] },
-//       checkIn: { $lt: endDate },
-//       checkOut: { $gt: startDate },
-//     });
-
-//     const availableRooms = room.totalRooms - bookedCount;
-//     const isAvailable = availableRooms > 0;
-
-//     const nights = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-//     const totalPrice = room.pricePerDay * nights;
-
-//     return res.status(200).json({
-//       success: true,
-//       message: isAvailable ? "Rooms available" : "No rooms available",
-//       availability: {
-//         isAvailable,
-//         totalRooms: room.totalRooms,
-//         bookedRooms: bookedCount,
-//         availableRooms: Math.max(0, availableRooms),
-//         checkIn,
-//         checkOut,
-//         nights,
-//         pricePerNight: room.pricePerDay,
-//         totalPrice,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Quick availability check error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//   }
-// };
-
-
-// export const getDateBookingDetails = async (req, res) => {
-//   try {
-//     const { roomId, date } = req.query;
-
-//     if (!roomId || !date) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Room ID and date are required",
-//       });
-//     }
-
-//     const selectedDate = new Date(date);
-//     selectedDate.setHours(0, 0, 0, 0);
-
-//     const nextDay = new Date(selectedDate);
-//     nextDay.setDate(nextDay.getDate() + 1);
+    if (endDate <= startDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Check-out must be after check-in",
+      });
+    }
 
  
-//     const bookings = await Booking.find({
-//       roomId,
-//       status: { $in: ["pending", "booked"] },
-//       checkIn: { $lt: nextDay },
-//       checkOut: { $gt: selectedDate },
-//     })
-//       .populate("userId", "name email mobileNumber")
-//       .populate("hotelId", "name city")
-//       .sort({ checkIn: 1 });
+    const bookedCount = await Booking.countDocuments({
+      roomId,
+      status: { $in: ["pending", "booked"] },
+      checkIn: { $lt: endDate },
+      checkOut: { $gt: startDate },
+    });
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Date booking details fetched",
-//       date,
-//       bookings: bookings.map((b) => ({
-//         id: b._id,
-//         guest: {
-//           name: b.userId?.name || "Guest",
-//           email: b.userId?.email,
-//           phone: b.userId?.mobileNumber,
-//         },
-//         checkIn: b.checkIn,
-//         checkOut: b.checkOut,
-//         totalGuest: b.totalGuest,
-//         totalPrice: b.totalPrice,
-//         status: b.status,
-//         paymentStatus: b.paymentStatus,
-//         paymentMode: b.paymentMode,
-//       })),
-//     });
-//   } catch (error) {
-//     console.error("Date booking details error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//   }
-// };
+    const availableRooms = room.totalRooms - bookedCount;
+    const isAvailable = availableRooms > 0;
+
+    const nights = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const totalPrice = room.pricePerDay * nights;
+
+    return res.status(200).json({
+      success: true,
+      message: isAvailable ? "Rooms available" : "No rooms available",
+      availability: {
+        isAvailable,
+        totalRooms: room.totalRooms,
+        bookedRooms: bookedCount,
+        availableRooms: Math.max(0, availableRooms),
+        checkIn,
+        checkOut,
+        nights,
+        pricePerNight: room.pricePerDay,
+        totalPrice,
+      },
+    });
+  } catch (error) {
+    console.error("Quick availability check error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 
 
-// export const getAvailabilityForecast = async (req, res) => {
-//   try {
-//     const { hotelId } = req.params;
+export const getDateBookingDetails = async (req, res) => {
+  try {
+    const { roomId, date } = req.query;
 
-//     const hotel = await Hotel.findById(hotelId);
-//     if (!hotel) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Hotel not found",
-//       });
-//     }
+    if (!roomId || !date) {
+      return res.status(400).json({
+        success: false,
+        message: "Room ID and date are required",
+      });
+    }
 
-//     const rooms = await Room.find({ hotelId });
-//     const totalCapacity = rooms.reduce((sum, r) => sum + r.totalRooms, 0);
+    const selectedDate = new Date(date);
+    selectedDate.setHours(0, 0, 0, 0);
 
-//     const today = new Date();
-//     today.setHours(0, 0, 0, 0);
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
 
-//     const next30Days = new Date(today);
-//     next30Days.setDate(next30Days.getDate() + 30);
+ 
+    const bookings = await Booking.find({
+      roomId,
+      status: { $in: ["pending", "booked"] },
+      checkIn: { $lt: nextDay },
+      checkOut: { $gt: selectedDate },
+    })
+      .populate("userId", "name email mobileNumber")
+      .populate("hotelId", "name city")
+      .sort({ checkIn: 1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Date booking details fetched",
+      date,
+      bookings: bookings.map((b) => ({
+        id: b._id,
+        guest: {
+          name: b.userId?.name || "Guest",
+          email: b.userId?.email,
+          phone: b.userId?.mobileNumber,
+        },
+        checkIn: b.checkIn,
+        checkOut: b.checkOut,
+        totalGuest: b.totalGuest,
+        totalPrice: b.totalPrice,
+        status: b.status,
+        paymentStatus: b.paymentStatus,
+        paymentMode: b.paymentMode,
+      })),
+    });
+  } catch (error) {
+    console.error("Date booking details error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+export const getAvailabilityForecast = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    const hotel = await Hotel.findById(hotelId);
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: "Hotel not found",
+      });
+    }
+
+    const rooms = await Room.find({ hotelId });
+    const totalCapacity = rooms.reduce((sum, r) => sum + r.totalRooms, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const next30Days = new Date(today);
+    next30Days.setDate(next30Days.getDate() + 30);
 
    
-//     const bookings = await Booking.find({
-//       hotelId,
-//       status: { $in: ["pending", "booked"] },
-//       checkIn: { $lt: next30Days },
-//       checkOut: { $gt: today },
-//     });
+    const bookings = await Booking.find({
+      hotelId,
+      status: { $in: ["pending", "booked"] },
+      checkIn: { $lt: next30Days },
+      checkOut: { $gt: today },
+    });
 
   
-//     const forecast = [];
-//     const currentDate = new Date(today);
+    const forecast = [];
+    const currentDate = new Date(today);
 
-//     for (let i = 0; i < 30; i++) {
-//       const dateStr = currentDate.toISOString().split("T")[0];
+    for (let i = 0; i < 30; i++) {
+      const dateStr = currentDate.toISOString().split("T")[0];
 
-//       const bookedCount = bookings.filter((booking) => {
-//         const bookingStart = new Date(booking.checkIn);
-//         const bookingEnd = new Date(booking.checkOut);
-//         bookingStart.setHours(0, 0, 0, 0);
-//         bookingEnd.setHours(0, 0, 0, 0);
+      const bookedCount = bookings.filter((booking) => {
+        const bookingStart = new Date(booking.checkIn);
+        const bookingEnd = new Date(booking.checkOut);
+        bookingStart.setHours(0, 0, 0, 0);
+        bookingEnd.setHours(0, 0, 0, 0);
 
-//         return currentDate >= bookingStart && currentDate < bookingEnd;
-//       }).length;
+        return currentDate >= bookingStart && currentDate < bookingEnd;
+      }).length;
 
-//       const availableRooms = totalCapacity - bookedCount;
-//       const occupancyRate = (bookedCount / totalCapacity) * 100;
+      const availableRooms = totalCapacity - bookedCount;
+      const occupancyRate = (bookedCount / totalCapacity) * 100;
 
-//       let status = "low";
-//       if (occupancyRate >= 90) status = "full";
-//       else if (occupancyRate >= 70) status = "high";
-//       else if (occupancyRate >= 40) status = "medium";
+      let status = "low";
+      if (occupancyRate >= 90) status = "full";
+      else if (occupancyRate >= 70) status = "high";
+      else if (occupancyRate >= 40) status = "medium";
 
-//       forecast.push({
-//         date: dateStr,
-//         dayOfWeek: currentDate.toLocaleDateString("en-IN", { weekday: "short" }),
-//         totalRooms: totalCapacity,
-//         bookedRooms: bookedCount,
-//         availableRooms,
-//         occupancyRate: occupancyRate.toFixed(0),
-//         status,
-//       });
+      forecast.push({
+        date: dateStr,
+        dayOfWeek: currentDate.toLocaleDateString("en-IN", { weekday: "short" }),
+        totalRooms: totalCapacity,
+        bookedRooms: bookedCount,
+        availableRooms,
+        occupancyRate: occupancyRate.toFixed(0),
+        status,
+      });
 
-//       currentDate.setDate(currentDate.getDate() + 1);
-//     }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
-//     return res.status(200).json({
-//       success: true,
-//       message: "Availability forecast fetched",
-//       hotel: {
-//         id: hotel._id,
-//         name: hotel.name,
-//         totalRooms: totalCapacity,
-//       },
-//       forecast,
-//     });
-//   } catch (error) {
-//     console.error("Availability forecast error:", error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//     });
-//   }
-// };
+    return res.status(200).json({
+      success: true,
+      message: "Availability forecast fetched",
+      hotel: {
+        id: hotel._id,
+        name: hotel.name,
+        totalRooms: totalCapacity,
+      },
+      forecast,
+    });
+  } catch (error) {
+    console.error("Availability forecast error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

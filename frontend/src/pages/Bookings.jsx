@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios.config";
+import toast from "react-hot-toast";
 import {
   ArrowRight,
   ChevronDown,
@@ -11,88 +12,66 @@ import {
   XCircle,
   Info,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { 
+  useUpcomingBookings, 
+  useMyBookings, 
+  useCancelBooking, 
+  useDeleteBooking 
+} from "../hooks/useBookingQueries";
+import { useAuth } from "../context/AuthContext";
 
 const Bookings = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("accessToken");
+  const { isLoggedIn, loading: authLoading } = useAuth();
 
-  const [upcoming, setUpcoming] = useState([]);
-  const [all, setAll] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // React Query hooks
+  const { 
+    data: upcomingData, 
+    isLoading: loadingUpcoming, 
+    error: upcomingError 
+  } = useUpcomingBookings();
+  
+  const { 
+    data: allData, 
+    isLoading: loadingAll, 
+    error: allError 
+  } = useMyBookings();
+
+  const cancelMutation = useCancelBooking();
+  const deleteMutation = useDeleteBooking();
+
   const [showAll, setShowAll] = useState(false);
-  const [actionLoading, setActionLoading] = useState(null);
 
-  const authHeader = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
+  const upcoming = upcomingData?.upcomingBookings || [];
+  const all = allData?.bookings || [];
+  const loading = authLoading || loadingUpcoming || loadingAll;
+  const error = upcomingError || allError;
+  const actionLoading = cancelMutation.isPending || deleteMutation.isPending;
 
   useEffect(() => {
-    if (!token) {
+    if (!authLoading && !isLoggedIn) {
       navigate("/auth?redirect=/bookings");
-      return;
     }
-
-    const fetchBookings = async () => {
-      try {
-        const [upRes, allRes] = await Promise.all([
-          api.get(
-            `${import.meta.env.VITE_API_URL}/bookings/upcoming`,
-            authHeader,
-          ),
-          api.get(`${import.meta.env.VITE_API_URL}/bookings/my`, authHeader),
-        ]);
-        setUpcoming(upRes.data.upcomingBookings || []);
-        setAll(allRes.data.bookings || []);
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to load bookings");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBookings();
-  }, [navigate, token]);
+  }, [navigate, isLoggedIn, authLoading]);
 
   const cancelBooking = async (bookingId) => {
     if (!window.confirm("Are you sure you want to cancel this booking?"))
       return;
     try {
-      setActionLoading(bookingId);
-      const res = await api.patch(
-        `${import.meta.env.VITE_API_URL}/bookings/cancel/${bookingId}`,
-        {},
-        authHeader,
-      );
-      toast.success(res.data.message);
-      setUpcoming((prev) => prev.filter((b) => b._id !== bookingId));
-      setAll((prev) =>
-        prev.map((b) =>
-          b._id === bookingId ? { ...b, status: "canceled" } : b,
-        ),
-      );
+      const res = await cancelMutation.mutateAsync(bookingId);
+      toast.success(res.message);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to cancel booking");
-    } finally {
-      setActionLoading(null);
     }
   };
 
   const deleteBooking = async (bookingId) => {
     if (!window.confirm("Delete this booking permanently?")) return;
     try {
-      setActionLoading(bookingId);
-      const res = await api.delete(
-        `${import.meta.env.VITE_API_URL}/bookings/${bookingId}`,
-        authHeader,
-      );
-      toast.success(res.data.message);
-      setAll((prev) => prev.filter((b) => b._id !== bookingId));
+      const res = await deleteMutation.mutateAsync(bookingId);
+      toast.success(res.message);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to delete booking");
-    } finally {
-      setActionLoading(null);
     }
   };
 

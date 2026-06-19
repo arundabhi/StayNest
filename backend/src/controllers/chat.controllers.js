@@ -156,7 +156,6 @@ export const markMessagesAsSeen = async (req, res) => {
 
     await Chat.updateMany(query, { $set: { status: "seen" } });
 
-    // 🔥 Notify all affected users
     notifyUsers.forEach(uid => {
       if (connections[uid]) {
         connections[uid].forEach(stream => {

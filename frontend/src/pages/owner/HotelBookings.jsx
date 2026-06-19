@@ -27,7 +27,8 @@ const HotelBookings = () => {
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
-  
+  const [activeTab, setActiveTab] = useState("bookings"); // "bookings" or "waitlist"
+  const [waitlist, setWaitlist] = useState([]);
 
   useEffect(() => {
     api
@@ -36,7 +37,7 @@ const HotelBookings = () => {
         const ownerHotels = res.data.hotels || [];
         setHotels(ownerHotels);
         if (ownerHotels.length > 0) {
-          fetchBookings(ownerHotels[0]._id);
+          setHotelId(ownerHotels[0]._id);
         }
       })
       .catch(() => {
@@ -46,8 +47,8 @@ const HotelBookings = () => {
   }, []);
 
   useEffect(() => {
-  setPage(1);
-}, [searchQuery]);
+    setPage(1);
+  }, [searchQuery, activeTab]);
 
   const fetchBookings = async (id, resetPage = false) => {
     if (!id) return;
@@ -68,22 +69,54 @@ const HotelBookings = () => {
     }
   };
 
+  const fetchWaitlist = async (id) => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      setHotelId(id);
+      const res = await api.get(`/waitlists/hotel/${id}`);
+      if (res.data.success) {
+        setWaitlist(res.data.waitlists || []);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to fetch waitlist");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePromoteWaitlistEntry = async (waitlistId) => {
+    try {
+      const confirmPromote = window.confirm("Are you sure you want to manually promote this user from the waitlist?");
+      if (!confirmPromote) return;
+
+      const res = await api.patch(`/waitlists/promote-entry/${waitlistId}`);
+      if (res.data.success) {
+        toast.success("Waitlist user promoted and booking confirmed!");
+        // Refresh waitlist & bookings
+        fetchWaitlist(hotelId);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to promote waitlist entry");
+    }
+  };
+
+  useEffect(() => {
+    if (hotelId) {
+      if (activeTab === "bookings") {
+        fetchBookings(hotelId);
+      } else if (activeTab === "waitlist") {
+        fetchWaitlist(hotelId);
+      }
+    }
+  }, [page, hotelId, searchQuery, activeTab]);
 
   const paginatedBookings = bookings;
-
-    useEffect(() => {
-  if (hotelId) {
-    fetchBookings(hotelId);
-  }
-}, [page, hotelId, searchQuery]);
-
-
-
-useEffect(() => {
-  if (page > totalPages) {
-    setPage(totalPages || 1);
-  }
-}, [totalPages]);
+  const filteredWaitlist = waitlist.filter(
+    (w) =>
+      w.userId?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.roomId?.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pt-24 pb-12 px-4 sm:px-8">
@@ -124,6 +157,30 @@ useEffect(() => {
           </div>
         </div>
 
+        {/* TABS SELECTOR */}
+        <div className="flex border-b border-slate-200 mb-6 gap-6">
+          <button
+            onClick={() => setActiveTab("bookings")}
+            className={`pb-4 text-sm font-black uppercase tracking-wider transition-all border-b-2 ${
+              activeTab === "bookings"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            Reservations
+          </button>
+          <button
+            onClick={() => setActiveTab("waitlist")}
+            className={`pb-4 text-sm font-black uppercase tracking-wider transition-all border-b-2 ${
+              activeTab === "waitlist"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            Waitlisted Guests
+          </button>
+        </div>
+
         {/* SEARCH & FILTERS */}
         <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-8 flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-1 w-full">
@@ -152,10 +209,10 @@ useEffect(() => {
             <div className="p-20 flex flex-col items-center gap-4">
               <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               <p className="text-slate-400 font-bold animate-pulse uppercase text-xs tracking-widest">
-                Fetching Ledger...
+                Fetching Data...
               </p>
             </div>
-          ) : (
+          ) : activeTab === "bookings" ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -258,59 +315,150 @@ useEffect(() => {
                 </tbody>
               </table>
             </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-50">
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Guest Details
+                    </th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Stay Period
+                    </th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Room Details
+                    </th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                      Guests Count
+                    </th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                      Status
+                    </th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredWaitlist.length > 0 ? (
+                    filteredWaitlist.map((w) => (
+                      <tr
+                        key={w._id}
+                        className="group hover:bg-orange-50/30 transition-colors"
+                      >
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-black">
+                              {w.userId?.name?.charAt(0) || "?"}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900">
+                                {w.userId?.name || "Guest"}
+                              </p>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                {w.userId?.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="flex items-center gap-3">
+                            <p className="text-sm font-black text-slate-700">
+                              {new Date(w.checkIn).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                            </p>
+                            <ArrowLeftRight size={14} className="text-slate-300" />
+                            <p className="text-sm font-black text-slate-700">
+                              {new Date(w.checkOut).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-6">
+                          <p className="text-sm font-bold text-slate-700">
+                            {w.roomId?.title || "Room"}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-medium uppercase">
+                            {w.roomId?.roomType}
+                          </p>
+                        </td>
+                        <td className="px-6 py-6 text-center font-black text-slate-900">
+                          {w.totalGuest} Guests
+                        </td>
+                        <td className="px-6 py-6 text-center">
+                          <span className="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-full text-[10px] font-black uppercase tracking-widest">
+                            Waitlisted
+                          </span>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="flex justify-center">
+                            <button
+                              onClick={() => handlePromoteWaitlistEntry(w._id)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                              Confirm Booking
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="px-8 py-20 text-center text-slate-400 font-medium"
+                      >
+                        No waitlisted guests found matching criteria.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-       <div className="flex items-center justify-between mt-6 px-4">
 
-  {/* LEFT INFO */}
-  <p className="text-sm text-slate-500 font-medium">
-   {bookings.length > 0 ? (
-  <>
-    Page {page} of {totalPages}
-  </>
-) : (
-  "No bookings found"
-)}
-  </p>
+        {activeTab === "bookings" && bookings.length > 0 && (
+          <div className="flex items-center justify-between mt-6 px-4">
+            {/* LEFT INFO */}
+            <p className="text-sm text-slate-500 font-medium">
+              Page {page} of {totalPages}
+            </p>
 
-  {/* RIGHT PAGINATION */}
-  <div className="flex items-center gap-4">
+            {/* RIGHT PAGINATION */}
+            <div className="flex items-center gap-4">
+              {/* Prev */}
+              <button
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                className={`px-4 py-2 rounded-xl font-semibold transition-all
+                  ${page === 1
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-white border border-slate-200 hover:bg-slate-50 shadow-sm"
+                  }`}
+              >
+                ← Prev
+              </button>
 
-    {/* Prev */}
-    <button
-      onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-      disabled={page === 1}
-      className={`px-4 py-2 rounded-xl font-semibold transition-all
-        ${
-          page === 1
-            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-            : "bg-white border border-slate-200 hover:bg-slate-50 shadow-sm"
-        }`}
-    >
-      ← Prev
-    </button>
+              {/* Page */}
+              <div className="px-4 py-2 bg-slate-100 rounded-xl font-bold text-slate-700 shadow-sm">
+                Page {page} / {totalPages || 1}
+              </div>
 
-    {/* Page */}
-    <div className="px-4 py-2 bg-slate-100 rounded-xl font-bold text-slate-700 shadow-sm">
-      Page {page} / {totalPages || 1}
-    </div>
-
-    {/* Next */}
-    <button
-      onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-     disabled={page >= totalPages}
-      className={`px-4 py-2 rounded-xl font-semibold transition-all
-        ${
-          page === totalPages || totalPages === 0
-            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-            : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
-        }`}
-    >
-      Next →
-    </button>
-
-  </div>
-</div>
+              {/* Next */}
+              <button
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={page >= totalPages}
+                className={`px-4 py-2 rounded-xl font-semibold transition-all
+                  ${page >= totalPages
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
+                  }`}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

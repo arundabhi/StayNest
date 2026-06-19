@@ -62,7 +62,9 @@ const OrderSummary = ({
                       <Sparkles size={12} className="text-white" />
                     </div>
                     <span className="text-sm font-black text-orange-600 uppercase tracking-tight">
-                      {pricing.specialOfferPercent}% Special Offer
+                      {pricing.specialOfferPercent > 0 
+                        ? `${pricing.specialOfferPercent}% Special Offer` 
+                        : "Special Offer"}
                     </span>
                   </div>
                   <span className="text-sm font-black text-orange-600">

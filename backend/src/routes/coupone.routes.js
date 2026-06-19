@@ -9,6 +9,7 @@ import {
   validateCoupon,
   applyCoupon,
   getAvailableCoupons,
+  getOwnerCoupons,
 } from "../controllers/coupone.controllers.js";
 
 import { protect } from "../middlewares/auth.js";
@@ -19,7 +20,7 @@ const couponRouter = express.Router();
 couponRouter.post(
   "/create",
   protect,
-  isAdmin,
+  authorizeRoles("owner", "admin"),
   createCoupon
 );
 
@@ -49,6 +50,13 @@ couponRouter.get(
   protect,
   authorizeRoles("admin"),
   getAllCoupon
+);
+
+couponRouter.get(
+  "/owner/all",
+  protect,
+  authorizeRoles("owner", "admin"),
+  getOwnerCoupons
 );
 
 

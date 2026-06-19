@@ -55,6 +55,9 @@ const bookingSchema = new Schema(
       enum: ["pending", "booked", "completed", "canceled"],
       default: "pending",
     },
+    holdExpiresAt: {
+      type: Date
+    },
 
     paymentStatus: {
       type: String,

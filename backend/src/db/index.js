@@ -5,7 +5,8 @@ let connectionPromise = null;
 
 const connectDb = async () => {
     // 1. If already connected, reuse
-    if (isConnected && mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1) {
+        isConnected = true;
         return;
     }
 

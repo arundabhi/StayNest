@@ -1,5 +1,5 @@
 import express from "express";
-import { confirmRazorpayBooking, createRazorpayOrder, getHotelPayments, getMyPayments, getPatmentByBookingId, paymentOnCOD, paymentOnStripe, verifyRazorpayPayment, verifyStripePayment } from "../controllers/payment.controllers.js";
+import { confirmRazorpayBooking, createRazorpayOrder, getHotelPayments, getPendingPaymentsForHotel, getMyPayments, getPatmentByBookingId, paymentOnCOD, paymentOnStripe, verifyRazorpayPayment, verifyStripePayment } from "../controllers/payment.controllers.js";
 import { protect } from "../middlewares/auth.js";
 import { authorizeRoles } from "../middlewares/role.js";
 import { paymentLimiter } from "../middlewares/rateLimiter.js";
@@ -68,6 +68,13 @@ paymentRouter2.get(
   protect,
   authorizeRoles("owner", "admin"),
   getHotelPayments
+);
+
+paymentRouter2.get(
+  "/hotel/pending",
+  protect,
+  authorizeRoles("owner", "admin"),
+  getPendingPaymentsForHotel
 );
 
 

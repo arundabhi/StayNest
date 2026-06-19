@@ -1,5 +1,7 @@
 import { Booking } from "../models/booking.models.js";
 import { Coupon } from "../models/coupone.models.js";
+import { Hotel } from "../models/hotel.models.js";
+import mongoose from "mongoose";
 
 
 
@@ -21,6 +23,7 @@ export const createCoupon = async (req, res) => {
       discountValue,
       usageLimit,
       minimumBookingAmount = 0,
+      hotelId,
     } = req.body;
 
     if (!code || !expiryDate || !discountType || !discountValue || !usageLimit) {
@@ -30,14 +33,36 @@ export const createCoupon = async (req, res) => {
       });
     }
 
-    const coupon = await Coupon.create({
+    if (user.role === "owner") {
+      if (!hotelId) {
+        return res.status(400).json({
+          success: false,
+          message: "Hotel ID is required for owner coupons",
+        });
+      }
+      const hotel = await Hotel.findOne({ _id: hotelId, owner: user._id });
+      if (!hotel) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not own this hotel",
+        });
+      }
+    }
+
+    const couponData = {
       code: code.toUpperCase().trim(),
       expiryDate,
       discountType,
       discountValue,
       usageLimit,
       minimumBookingAmount,
-    });
+    };
+
+    if (hotelId) couponData.hotelId = hotelId;
+    if (user && user._id) couponData.createdBy = user._id;
+    else if (mongoose.Types.ObjectId.isValid(req.userId)) couponData.createdBy = req.userId;
+
+    const coupon = await Coupon.create(couponData);
 
     return res.status(201).json({
       success: true,
@@ -80,6 +105,7 @@ export const updateCoupon = async (req, res) => {
       discountValue,
       usageLimit,
       minimumBookingAmount,
+      hotelId,
     } = req.body;
 
     if (
@@ -87,7 +113,8 @@ export const updateCoupon = async (req, res) => {
       !discountType &&
       discountValue === undefined &&
       usageLimit === undefined &&
-      minimumBookingAmount === undefined
+      minimumBookingAmount === undefined &&
+      hotelId === undefined
     ) {
       return res.status(400).json({
         success: false,
@@ -95,6 +122,15 @@ export const updateCoupon = async (req, res) => {
       });
     }
 
+    if (user.role === "owner" && hotelId) {
+      const hotel = await Hotel.findOne({ _id: hotelId, owner: user._id });
+      if (!hotel) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not own this hotel",
+        });
+      }
+    }
 
     const updatedData = {};
     if (expiryDate) updatedData.expiryDate = expiryDate;
@@ -103,6 +139,9 @@ export const updateCoupon = async (req, res) => {
     if (usageLimit !== undefined) updatedData.usageLimit = usageLimit;
     if (minimumBookingAmount !== undefined)
       updatedData.minimumBookingAmount = minimumBookingAmount;
+    if (hotelId !== undefined) {
+      updatedData.hotelId = hotelId || null;
+    }
 
     const coupon = await Coupon.findByIdAndUpdate(
       couponId,
@@ -194,6 +233,7 @@ export const getAllCoupon = async (req, res) => {
 
     const [coupons, totalCoupons] = await Promise.all([
       Coupon.find()
+        .populate("hotelId", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -439,7 +479,7 @@ export const applyCoupon = async (req, res) => {
 export const validateCoupon = async (req, res) => {
   try {
     const userId = req.userId;
-    const { code, bookingAmount } = req.body;
+    const { code, bookingAmount, hotelId } = req.body;
 
     if (!userId) {
       return res.status(401).json({
@@ -465,6 +505,13 @@ export const validateCoupon = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Invalid or expired coupon",
+      });
+    }
+
+    if (coupon.hotelId && coupon.hotelId.toString() !== hotelId) {
+      return res.status(400).json({
+        success: false,
+        message: "This coupon is only applicable for a specific hotel",
       });
     }
 
@@ -553,6 +600,59 @@ export const getAvailableCoupons = async (req, res) => {
 
   } catch (error) {
     console.error("get available coupons error", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getOwnerCoupons = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!['owner', 'admin'].includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    const hotels = await Hotel.find({ owner: user._id });
+    const hotelIds = hotels.map(h => h._id);
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const query = {
+      $or: [
+        { createdBy: user._id },
+        { hotelId: { $in: hotelIds } }
+      ]
+    };
+
+    const [coupons, totalCoupons] = await Promise.all([
+      Coupon.find(query)
+        .populate("hotelId", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Coupon.countDocuments(query),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Owner coupons fetched successfully",
+      meta: {
+        totalCoupons,
+        currentPage: page,
+        totalPages: Math.ceil(totalCoupons / limit),
+        pageSize: limit,
+      },
+      coupons,
+    });
+  } catch (error) {
+    console.error("get owner coupons error", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

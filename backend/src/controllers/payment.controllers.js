@@ -23,12 +23,12 @@ export const paymentOnStripe = async (req, res) => {
     }
 
 
-   if (!booking.userId.equals(req.userId)) {
+    if (booking.userId.toString() !== req.userId.toString()) {
       return res.status(403).json({
-      success: false,
-      message: "Not authorized to pay for this booking",
-  });
-}
+        success: false,
+        message: "Not authorized to pay for this booking",
+      });
+    }
 
 
     
@@ -128,6 +128,7 @@ export const verifyStripePayment = async (req, res) => {
 
     await Booking.findByIdAndUpdate(payment.bookingId, {
       status: "booked",
+      holdExpiresAt: null,
       paymentStatus: "success",
     });
 
@@ -155,12 +156,19 @@ export const createRazorpayOrder = async (req, res) => {
   try {
     const userId = req.userId;
     const { bookingId } = req.params;
+      
     
     const booking = await Booking.findById(bookingId);
-    if (!booking) {
+        if (!booking) {
       return res.status(404).json({
         success: false,
         message: "Booking not found",
+      });
+    }
+    if (booking.userId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
       });
     }
 
@@ -234,7 +242,8 @@ export const verifyRazorpayPayment = async (req, res) => {
  
     await Booking.findByIdAndUpdate(payment.bookingId, {
       status: "booked",
-      paymentStatus: "success"
+      paymentStatus: "success",
+      holdExpiresAt: null,
     });
 
     return res.status(200).json({
@@ -251,14 +260,13 @@ export const verifyRazorpayPayment = async (req, res) => {
   }
 };
 
-
-
 export const confirmRazorpayBooking = async (req, res) => {
   const { bookingId } = req.params;
 
   await Booking.findByIdAndUpdate(bookingId, {
     status: "booked",
     paymentStatus: "success",
+    holdExpiresAt: null,
   });
 
   res.json({
@@ -266,9 +274,6 @@ export const confirmRazorpayBooking = async (req, res) => {
     message: "Booking confirmed",
   });
 };
-
-
-
 
 
 export const paymentOnCOD = async (req, res) => {
@@ -304,6 +309,7 @@ export const paymentOnCOD = async (req, res) => {
     await Booking.findByIdAndUpdate(bookingId, {
       status: "booked",
       paymentStatus: "pending",
+      holdExpiresAt: null
     });
 
     return res.status(200).json({
@@ -427,6 +433,33 @@ export const getHotelPayments = async (req, res) => {
       .limit(limit)
       .skip(skip);
 
+    // Calculate overall aggregates for the whole hotel history
+    const aggregates = await Payment.aggregate([
+      { $match: { bookingId: { $in: bookingIds } } },
+      {
+        $group: {
+          _id: "$paymentStatus",
+          totalAmount: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = {
+      totalEarnings: 0,
+      totalPending: 0,
+      settledCount: 0,
+    };
+
+    aggregates.forEach((item) => {
+      if (item._id === "success") {
+        stats.totalEarnings += item.totalAmount;
+        stats.settledCount = item.count;
+      } else if (item._id === "pending") {
+        stats.totalPending += item.totalAmount;
+      }
+    });
+
     return res.status(200).json({
       success: true,
       hotel: {
@@ -434,8 +467,7 @@ export const getHotelPayments = async (req, res) => {
         city: hotel.city,
       },
       payments,
-
-      // ✅ SEND THIS
+      stats,
       currentPage: page,
       totalPages: Math.ceil(totalPayments / limit),
       totalPayments,
@@ -446,6 +478,56 @@ export const getHotelPayments = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch hotel payments",
+    });
+  }
+};
+
+export const getPendingPaymentsForHotel = async (req, res) => {
+  try {
+    const ownerId = req.userId;
+    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    const hotel = await Hotel.findOne({ owner: ownerId });
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: "Hotel not found",
+      });
+    }
+
+    const query = {
+      hotelId: hotel._id,
+      paymentStatus: { $in: ["pending", "processing"] },
+      status: { $ne: "canceled" },
+    };
+
+    const totalBookings = await Booking.countDocuments(query);
+
+    const bookings = await Booking.find(query)
+      .populate("userId", "name email")
+      .populate("roomId", "title roomType pricePerDay")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip);
+
+    return res.status(200).json({
+      success: true,
+      hotel: {
+        name: hotel.name,
+        city: hotel.city,
+      },
+      bookings,
+      currentPage: page,
+      totalPages: Math.ceil(totalBookings / limit),
+      totalBookings,
+    });
+  } catch (error) {
+    console.error("Get pending payments error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch pending payments",
     });
   }
 };

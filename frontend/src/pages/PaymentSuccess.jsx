@@ -12,31 +12,19 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const verifyPayment = async () => {
       try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) throw new Error("No auth token");
-
         // ✅ STRIPE VERIFICATION
         if (session_id) {
           await api.get(
-            `${import.meta.env.VITE_API_URL}/payment/stripe/verify`,
+            `/payment/stripe/verify`,
             {
               params: { session_id },
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
             },
           );
         }
 
         if (bookingId) {
           await api.patch(
-            `${import.meta.env.VITE_API_URL}/payment/razorpay/confirm/${bookingId}`,
-            {},
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
+            `/payment/razorpay/confirm/${bookingId}`
           );
         }
 

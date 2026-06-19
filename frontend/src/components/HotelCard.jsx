@@ -13,70 +13,35 @@ import toast from "react-hot-toast";
  * - Special Offers (Festival multiplier or standard percentage)
  * - Premium hover effects and micro-animations
  */
+import { useWishlistContext } from "../context/WishlistContext";
+
 const HotelCard = ({ hotel, searchParams = "" }) => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("accessToken");
+  const { toggleWishlist, isInWishlist } = useWishlistContext();
 
-  const [isWished, setIsWished] = useState(false);
   const [wishLoading, setWishLoading] = useState(false);
-  const [festivalOffer, setFestivalOffer] = useState(null);
 
-  const hasOffer = !!hotel.offer;
-  const savingAmount = hasOffer
-    ? hotel.offer.originalPrice - hotel.offer.offerPrice
-    : 0;
+  const isWished = isInWishlist(hotel?._id);
+  const festivalOffer = hotel?.festivalPricing || null;
 
-  // 1. Check wishlist status on mount
-  useEffect(() => {
-    if (!token || !hotel?._id) return;
-    const checkStatus = async () => {
-      try {
-        const res = await api.get(`/wishlists/is-wishlisted/${hotel._id}`);
-        setIsWished(res.data.wishlisted);
-      } catch (err) {
-        // Silently fail for auth/401 errors
-        if (err.response?.status !== 401 && err.response?.status !== 403) {
-          console.error("Wishlist check failed", err);
-        }
-      }
-    };
-    checkStatus();
-  }, [hotel?._id, token]);
+  const hasOffer = !!hotel?.offer;
+  const originalPrice = hotel?.basePrice || 0;
+  const discountPercent = hotel?.offer?.discountPercent || 0;
+  const offerPrice = hasOffer
+    ? Math.round(originalPrice * (1 - discountPercent / 100))
+    : originalPrice;
+  const savingAmount = originalPrice - offerPrice;
 
-  // 2. Fetch Festival Pricing if applicable
-  useEffect(() => {
-    if (!hotel?._id) return;
-    const fetchFestivalPricing = async () => {
-      try {
-        const res = await api.get(`/pricing/${hotel._id}`);
-        if (res.data.success && res.data.pricing) {
-          setFestivalOffer(res.data.pricing);
-        }
-      } catch (err) {
-        // Silent catch: hotel simply has no festival pricing
-      }
-    };
-    fetchFestivalPricing();
-  }, [hotel?._id]);
-
-  // 3. Toggle wishlist logic
+  // Toggle wishlist logic
   const handleWishlistToggle = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!token) {
-      return toast.error("Please login to save stays");
-    }
+    if (wishLoading) return;
 
     try {
       setWishLoading(true);
-      const res = await api.post("/wishlists/toggle", { hotelId: hotel._id });
-      setIsWished(res.data.wished);
-      toast.success(res.data.message, {
-        icon: res.data.wished ? "❤️" : "💔",
-      });
-    } catch (error) {
-      toast.error("Failed to update wishlist");
+      await toggleWishlist(hotel._id);
     } finally {
       setWishLoading(false);
     }
@@ -106,11 +71,11 @@ const HotelCard = ({ hotel, searchParams = "" }) => {
       return (
         <div className="flex flex-col">
           <span className="text-xs text-gray-400 line-through font-bold">
-            ₹{hotel.offer.originalPrice?.toLocaleString()}
+            ₹{originalPrice?.toLocaleString()}
           </span>
           <div className="flex items-baseline gap-1">
             <span className="text-2xl font-black text-gray-900">
-              ₹{hotel.offer.offerPrice?.toLocaleString()}
+              ₹{offerPrice?.toLocaleString()}
             </span>
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
               / night

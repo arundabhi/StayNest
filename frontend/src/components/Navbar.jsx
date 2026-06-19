@@ -17,6 +17,7 @@ import {
   CalendarCheck,
   MessageSquare,
   Hotel,
+  Ticket,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -233,6 +234,14 @@ const Navbar = () => {
                             label="Hotel Settings"
                             onClick={() => {
                               navigate("/owner/setting");
+                              setProfileOpen(false);
+                            }}
+                          />
+                          <DropdownItem
+                            icon={<Ticket size={18} />}
+                            label="Coupons"
+                            onClick={() => {
+                              navigate("/owner/coupons");
                               setProfileOpen(false);
                             }}
                           />
