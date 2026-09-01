@@ -8,8 +8,8 @@ import { getMemory } from "./memory.js";
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────
-const PRIMARY_MODEL = process.env.MODEL || "llama-3.3-70b-versatile";
-const FALLBACK_MODEL = "openai/gpt-oss-20b";
+const PRIMARY_MODEL = process.env.MODEL;
+const FALLBACK_MODEL = process.env.FALLBACK_MODEL || "openai/gpt-oss-20b";
 const MAX_HISTORY = 12;
 const FALLBACK_HISTORY = 6;
 
@@ -64,10 +64,10 @@ const loadChatHistory = async (memory) => {
 // ─────────────────────────────────────────────────────────────
 // MODEL FACTORY
 // ─────────────────────────────────────────────────────────────
-const buildModel = (modelName) =>
+const buildModel = (modelName, apiKey = process.env.GROQ_API_KEY) =>
   new ChatGroq({
     model: modelName,
-    apiKey: process.env.GROQ_API_KEY,
+    apiKey: apiKey || process.env.GROQ_API_KEY,
     temperature: 0,
     streaming: false,
     maxRetries: 1,
@@ -333,7 +333,12 @@ export const runAgent = async (userId, message) => {
           new MessagesPlaceholder("agent_scratchpad"),
         ]);
 
-        const fallbackExecutor = buildExecutor(buildModel(FALLBACK_MODEL), tools, fallbackPrompt);
+        const fallbackApiKey = process.env.GROQ_API_KEY_FALLBACK || process.env.GROQ_API_KEY;
+        const fallbackExecutor = buildExecutor(
+          buildModel(FALLBACK_MODEL, fallbackApiKey),
+          tools,
+          fallbackPrompt
+        );
 
         const result = await fallbackExecutor.invoke({
           input: trimmed,
