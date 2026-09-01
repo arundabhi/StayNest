@@ -210,7 +210,10 @@ export const createTools = (userId) => [
       
         const overlappingBookings = await Booking.countDocuments({
           roomId,
-          status: { $in: ["pending", "booked"] },
+          $or: [
+            { status: "booked" },
+            { status: "pending", holdExpiresAt: { $gt: new Date() } },
+          ],
           checkIn: { $lt: endDate },
           checkOut: { $gt: startDate },
         });
@@ -351,7 +354,10 @@ export const createTools = (userId) => [
         // Check availability
         const overlappingBookings = await Booking.countDocuments({
           roomId,
-          status: { $in: ["pending", "booked"] },
+          $or: [
+            { status: "booked" },
+            { status: "pending", holdExpiresAt: { $gt: new Date() } },
+          ],
           checkIn: { $lt: endDate },
           checkOut: { $gt: startDate },
         });

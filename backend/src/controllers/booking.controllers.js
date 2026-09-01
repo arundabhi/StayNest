@@ -380,10 +380,10 @@ export const previewBookingPrice = async (req, res) => {
 
     const overlappingBookings = await Booking.countDocuments({
       roomId,
-      status: { $in: ["pending", "booked"] },
-       holdExpiresAt: {
-        $gt: new Date()
-      },
+      $or: [
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
+      ],
       checkIn: { $lt: end },
       checkOut: { $gt: start },
     });
@@ -881,13 +881,12 @@ export const checkRoomAvailability = async (req, res) => {
     const bookedCount = await Booking.countDocuments({
       hotelId,
       roomId,
-      status: "booked",
       $or: [
-        {
-          checkIn: { $lt: checkOut },
-          checkOut: { $gt: checkIn }
-        }
-      ]
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
+      ],
+      checkIn: { $lt: new Date(checkOut) },
+      checkOut: { $gt: new Date(checkIn) },
     });
 
     if (bookedCount >= room.totalRooms) {

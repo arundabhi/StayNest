@@ -283,13 +283,12 @@ export const searchHotel = async (req, res) => {
       for (const room of rooms) {
         const bookedRooms = await Booking.countDocuments({
           roomId: room._id,
-          status: { $in: ["pending", "booked"] },
           $or: [
-            {
-              checkIn: { $lt: new Date(checkOut) },
-              checkOut: { $gt: new Date(checkIn) },
-            },
+            { status: "booked" },
+            { status: "pending", holdExpiresAt: { $gt: new Date() } },
           ],
+          checkIn: { $lt: new Date(checkOut) },
+          checkOut: { $gt: new Date(checkIn) },
         });
 
         if (bookedRooms < room.totalRooms) {

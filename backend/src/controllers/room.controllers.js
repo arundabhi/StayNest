@@ -468,13 +468,12 @@ export const checkRoomAvailability = async (req, res) => {
 
     const bookedCount = await Booking.countDocuments({
       roomId,
-      status: "confirmed",
       $or: [
-        {
-          checkIn: { $lt: new Date(checkOut) },
-          checkOut: { $gt: new Date(checkIn) },
-        },
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
       ],
+      checkIn: { $lt: new Date(checkOut) },
+      checkOut: { $gt: new Date(checkIn) },
     });
 
     const availableRooms = room.totalRooms - bookedCount;
@@ -578,19 +577,19 @@ export const getRoomStats = async (req, res) => {
 
     const confirmedBookings = await Booking.countDocuments({
       roomId,
-      status: "confirmed",
+      status: { $in: ["booked", "completed"] },
     });
 
     const cancelledBookings = await Booking.countDocuments({
       roomId,
-      status: "cancelled",
+      status: "canceled",
     });
 
     const revenueAgg = await Booking.aggregate([
       {
         $match: {
           roomId: room._id,
-          status: "confirmed",
+          status: { $in: ["booked", "completed"] },
         },
       },
       {

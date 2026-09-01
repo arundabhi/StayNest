@@ -56,11 +56,12 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
 
     const bookings = await Booking.find({
       roomId,
-      status: { $in: ["pending", "booked"] },
-      holdExpiresAt: { $gt: new Date() },
       $or: [
-        { checkIn: { $lte: end }, checkOut: { $gte: start } },
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
       ],
+      checkIn: { $lte: end },
+      checkOut: { $gte: start },
     }).select("checkIn checkOut status totalGuest");
 
 
@@ -72,12 +73,10 @@ export const getRoomAvailabilityCalendar = async (req, res) => {
 
      
       const bookedCount = bookings.filter((booking) => {
-        const bookingStart = new Date(booking.checkIn);
-        const bookingEnd = new Date(booking.checkOut);
-        bookingStart.setHours(0, 0, 0, 0);
-        bookingEnd.setHours(0, 0, 0, 0);
+        const bookingStartStr = new Date(booking.checkIn).toISOString().split("T")[0];
+        const bookingEndStr = new Date(booking.checkOut).toISOString().split("T")[0];
 
-        return currentDate >= bookingStart && currentDate < bookingEnd;
+        return dateStr >= bookingStartStr && dateStr < bookingEndStr;
       }).length;
 
       const availableRooms = room.totalRooms - bookedCount;
@@ -177,8 +176,12 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
     const roomIds = rooms.map((r) => r._id);
     const bookings = await Booking.find({
       roomId: { $in: roomIds },
-      status: { $in: ["pending", "booked"] },
-      $or: [{ checkIn: { $lte: end }, checkOut: { $gte: start } }],
+      $or: [
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
+      ],
+      checkIn: { $lte: end },
+      checkOut: { $gte: start },
     });
 
     const totalRoomsCount = rooms.reduce((sum, room) => sum + room.totalRooms, 0);
@@ -194,12 +197,10 @@ export const getHotelAvailabilityCalendar = async (req, res) => {
         const bookedCount = bookings.filter((booking) => {
           if (booking.roomId.toString() !== room._id.toString()) return false;
 
-          const bookingStart = new Date(booking.checkIn);
-          const bookingEnd = new Date(booking.checkOut);
-          bookingStart.setHours(0, 0, 0, 0);
-          bookingEnd.setHours(0, 0, 0, 0);
+          const bookingStartStr = new Date(booking.checkIn).toISOString().split("T")[0];
+          const bookingEndStr = new Date(booking.checkOut).toISOString().split("T")[0];
 
-          return currentDate >= bookingStart && currentDate < bookingEnd;
+          return dateStr >= bookingStartStr && dateStr < bookingEndStr;
         }).length;
 
         totalBooked += bookedCount;
@@ -280,10 +281,12 @@ export const getMonthViewCalendar = async (req, res) => {
 
     const bookings = await Booking.find({
       roomId,
-      status: { $in: ["pending", "booked"] },
       $or: [
-        { checkIn: { $lte: lastDay }, checkOut: { $gte: firstDay } },
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
       ],
+      checkIn: { $lte: lastDay },
+      checkOut: { $gte: firstDay },
     }).populate("userId", "name email");
 
     const startDay = firstDay.getDay(); 
@@ -300,14 +303,10 @@ export const getMonthViewCalendar = async (req, res) => {
 
      
       const dayBookings = bookings.filter((booking) => {
-        const bookingStart = new Date(booking.checkIn);
-        const bookingEnd = new Date(booking.checkOut);
-        bookingStart.setHours(0, 0, 0, 0);
-        bookingEnd.setHours(0, 0, 0, 0);
-        const checkDate = new Date(currentDate);
-        checkDate.setHours(0, 0, 0, 0);
+        const bookingStartStr = new Date(booking.checkIn).toISOString().split("T")[0];
+        const bookingEndStr = new Date(booking.checkOut).toISOString().split("T")[0];
 
-        return checkDate >= bookingStart && checkDate < bookingEnd;
+        return dateStr >= bookingStartStr && dateStr < bookingEndStr;
       });
 
       const bookedCount = dayBookings.length;
@@ -403,7 +402,10 @@ export const quickAvailabilityCheck = async (req, res) => {
  
     const bookedCount = await Booking.countDocuments({
       roomId,
-      status: { $in: ["pending", "booked"] },
+      $or: [
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
+      ],
       checkIn: { $lt: endDate },
       checkOut: { $gt: startDate },
     });
@@ -459,7 +461,10 @@ export const getDateBookingDetails = async (req, res) => {
  
     const bookings = await Booking.find({
       roomId,
-      status: { $in: ["pending", "booked"] },
+      $or: [
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
+      ],
       checkIn: { $lt: nextDay },
       checkOut: { $gt: selectedDate },
     })
@@ -521,7 +526,10 @@ export const getAvailabilityForecast = async (req, res) => {
    
     const bookings = await Booking.find({
       hotelId,
-      status: { $in: ["pending", "booked"] },
+      $or: [
+        { status: "booked" },
+        { status: "pending", holdExpiresAt: { $gt: new Date() } },
+      ],
       checkIn: { $lt: next30Days },
       checkOut: { $gt: today },
     });
@@ -534,12 +542,10 @@ export const getAvailabilityForecast = async (req, res) => {
       const dateStr = currentDate.toISOString().split("T")[0];
 
       const bookedCount = bookings.filter((booking) => {
-        const bookingStart = new Date(booking.checkIn);
-        const bookingEnd = new Date(booking.checkOut);
-        bookingStart.setHours(0, 0, 0, 0);
-        bookingEnd.setHours(0, 0, 0, 0);
+        const bookingStartStr = new Date(booking.checkIn).toISOString().split("T")[0];
+        const bookingEndStr = new Date(booking.checkOut).toISOString().split("T")[0];
 
-        return currentDate >= bookingStart && currentDate < bookingEnd;
+        return dateStr >= bookingStartStr && dateStr < bookingEndStr;
       }).length;
 
       const availableRooms = totalCapacity - bookedCount;

@@ -20,14 +20,21 @@ const RoomAvailabilityModal = ({ isOpen, onClose, roomId, roomTitle, pricePerDay
     }
   }, [isOpen, roomId]);
 
+  const formatLocalDate = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const fetchRoomCalendar = async () => {
     try {
       setLoading(true);
-      const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = formatLocalDate(new Date());
       // Fetch 45 days of availability calendar
       const next45Days = new Date();
       next45Days.setDate(next45Days.getDate() + 45);
-      const endStr = next45Days.toISOString().split("T")[0];
+      const endStr = formatLocalDate(next45Days);
 
       const res = await api.get(`/availability/room/${roomId}/calendar`, {
         params: {
