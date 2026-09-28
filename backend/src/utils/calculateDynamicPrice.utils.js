@@ -86,16 +86,18 @@ const countWeekendDays = (startDate, endDate) => {
   let weekendDays = 0;
   let totalDays = 0;
 
-  const date = new Date(startDate); 
-  while (date < endDate) {
-    const day = date.getDay();
+  const date = new Date(startDate);
+  const end = new Date(endDate);
+
+  while (date < end) {
+    const day = date.getUTCDay(); // 5 = Friday night, 6 = Saturday night
     totalDays++;
 
-    if (day === 0 || day === 6) {
+    if (day === 5 || day === 6) {
       weekendDays++;
     }
 
-    date.setDate(date.getDate() + 1);
+    date.setUTCDate(date.getUTCDate() + 1);
   }
 
   return { weekendDays, totalDays };

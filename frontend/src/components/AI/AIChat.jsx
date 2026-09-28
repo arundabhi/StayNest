@@ -87,11 +87,12 @@ const AIChat = () => {
     }
   }, [messages, isLoading]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (customMessage = null) => {
+    const rawText = customMessage || input;
+    if (!rawText || !rawText.trim() || isLoading) return;
 
-    const userMessage = input.trim();
-    setInput("");
+    const userMessage = rawText.trim();
+    if (!customMessage) setInput("");
 
     // If clearing chat, reset state immediately
     if (userMessage.toLowerCase().includes("clear chat") || userMessage.toLowerCase().includes("reset chat")) {
@@ -109,29 +110,30 @@ const AIChat = () => {
       const response = await api.post("/ai/chat", { message: userMessage });
       if (response.data.success) {
         let aiResponse = response.data.response;
+        let paymentUrl = response.data.paymentUrl || null;
 
-        // Check for redirect tag - more robust regex
+        // Check for redirect tag
         const redirectMatch = aiResponse.match(/\[REDIRECT_TO_PAYMENT:\s*([^\]\s]+)\]/);
 
         if (redirectMatch) {
-          const url = redirectMatch[1];
-          // Clean the response from the tag (global replace just in case)
+          paymentUrl = redirectMatch[1];
+          // Clean the response from the redirect tag
           aiResponse = aiResponse.replace(/\[REDIRECT_TO_PAYMENT:.*?\]/g, "").trim();
+        }
 
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: aiResponse },
-          ]);
+        const newMsg = {
+          role: "assistant",
+          content: aiResponse,
+          paymentUrl: paymentUrl || undefined,
+        };
 
-          // Perform redirect after 1.5 seconds
+        setMessages((prev) => [...prev, newMsg]);
+
+        if (paymentUrl) {
+          // Perform smooth redirect after 1.8 seconds so user can read summary
           setTimeout(() => {
-            window.location.href = url;
-          }, 1500);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: aiResponse },
-          ]);
+            window.location.href = paymentUrl;
+          }, 1800);
         }
       } else {
         throw new Error(response.data.message);
@@ -218,7 +220,81 @@ const AIChat = () => {
                     {msg.role === "user" ? (
                       <div className="whitespace-pre-wrap">{msg.content}</div>
                     ) : (
-                      <MarkdownContent content={msg.content} />
+                      <>
+                        <MarkdownContent content={msg.content} />
+                        
+                        {/* Quick Selection Action Chips */}
+                        {index === messages.length - 1 && !isLoading && !msg.paymentUrl && (
+                          (() => {
+                            const lower = (msg.content || "").toLowerCase();
+                            let quickActions = [];
+
+                            if (
+                              lower.includes("how would you like to pay") ||
+                              lower.includes("choose payment method") ||
+                              (lower.includes("stripe") && lower.includes("razorpay") && (lower.includes("cod") || lower.includes("hotel")))
+                            ) {
+                              quickActions = [
+                                { label: "💳 Stripe (Card)", value: "Stripe", className: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100" },
+                                { label: "💰 Razorpay (UPI)", value: "Razorpay", className: "bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100" },
+                                { label: "🏨 Pay at Hotel (COD)", value: "Pay at Hotel", className: "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100" },
+                              ];
+                            } else if (
+                              lower.includes("shall i confirm this booking") ||
+                              lower.includes("reply **yes** to confirm") ||
+                              lower.includes("reply yes to confirm") ||
+                              lower.includes("yes to confirm or no to cancel")
+                            ) {
+                              quickActions = [
+                                { label: "✅ Yes, Confirm Booking", value: "Yes", className: "bg-emerald-600 text-white hover:bg-emerald-700 font-semibold shadow-sm" },
+                                { label: "❌ No, Cancel", value: "No", className: "bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200" },
+                              ];
+                            }
+
+                            if (quickActions.length === 0) return null;
+
+                            return (
+                              <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
+                                {quickActions.map((qa, qi) => (
+                                  <button
+                                    key={qi}
+                                    onClick={() => handleSend(qa.value)}
+                                    disabled={isLoading}
+                                    className={`px-3.5 py-2 text-xs rounded-xl font-medium transition-all transform active:scale-95 shadow-sm cursor-pointer ${qa.className}`}
+                                  >
+                                    {qa.label}
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })()
+                        )}
+
+                        {/* Direct Payment Action CTA */}
+                        {msg.paymentUrl && (
+                          <div className="mt-4 pt-3 border-t border-gray-100 space-y-2">
+                            <a
+                              href={msg.paymentUrl}
+                              className={`inline-flex items-center justify-center gap-2.5 w-full px-5 py-3.5 ${
+                                msg.paymentUrl.includes("checkout.stripe.com")
+                                  ? "bg-[#635BFF] hover:bg-[#534be8] text-white shadow-indigo-200"
+                                  : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-200"
+                              } font-bold rounded-2xl shadow-lg transition-all transform active:scale-98 text-center no-underline text-sm`}
+                            >
+                              <span>🔒</span>
+                              <span>
+                                {msg.paymentUrl.includes("checkout.stripe.com")
+                                  ? "Pay Securely on Stripe Checkout"
+                                  : "Proceed to Payment"}
+                              </span>
+                              <span>➔</span>
+                            </a>
+                            <p className="text-[11px] text-center text-gray-500 font-medium">
+                              Redirecting to secure payment in a moment...
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
