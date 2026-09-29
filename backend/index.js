@@ -2,7 +2,7 @@ import 'dotenv/config';
 import app from "./src/app.js";
 import connectDb from "./src/db/index.js";
 import './src/api/cron/cleanup.js'
-import { initRAG } from "./src/ai/rag.js";
+import { hotelRagService } from "./src/ai/rag/hotelRag.service.js";
 
 const port = process.env.PORT || 3000;
 
@@ -16,11 +16,11 @@ const startServer = async () => {
     if (process.env.VERCEL !== '1') {
       app.listen(port, () => {
         console.log(`Server listening on port ${port}`);
-        initRAG();
+        hotelRagService.initializeRAG();
       });
     } else {
       // In Vercel, still initialize RAG if possible
-      initRAG().catch(err => console.error("RAG init failed", err));
+      hotelRagService.initializeRAG().catch(err => console.error("RAG init failed", err));
     }
   } catch (err) {
     console.error("Initialization failed:", err);
