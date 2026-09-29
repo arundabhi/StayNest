@@ -21,7 +21,7 @@
 | :--- | :--- | :--- | :--- |
 | **🏨 Hotel Owner** | `smita.joshi@gmail.com` | `Password123@` | Owner Dashboard, Hotel Management, Analytics, Dynamic Pricing |
 | **👤 Customer / Guest** | `demouser@gmail.com` | `Password123@` | Search, Instant Booking, AI Concierge, Wishlists, Waitlists |
-| **🛡️ Administrator** | *Configurable via DB Role* | *Admin Auth* | Hotel Approvals, Platform Analytics, AI Observability |
+| **🛡️ Administrator** | *--* | *--* | Hotel Approvals, Platform Analytics, AI Observability |
 
 ---
 
